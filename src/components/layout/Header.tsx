@@ -7,18 +7,23 @@ import {
   Avatar, 
   Menu, 
   MenuItem, 
-  Box 
+  Box,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
-import { FitnessCenter, AccountCircle } from '@mui/icons-material';
+import { FitnessCenter, AccountCircle, Menu as MenuIcon } from '@mui/icons-material';
 import { User } from '../../services/authService';
 
 interface HeaderProps {
   user?: User | null;
   onLogout?: () => void;
+  onMobileMenuToggle?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ user, onLogout, onMobileMenuToggle }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -40,8 +45,19 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   };
 
   return (
-    <AppBar position="static">
+    <AppBar position="fixed" sx={{ zIndex: 1300 }}>
       <Toolbar>
+        {isMobile && onMobileMenuToggle && (
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={onMobileMenuToggle}
+            sx={{ mr: 2, display: { md: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         <FitnessCenter sx={{ mr: 2, fontSize: 32 }} />
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           🏋️‍♂️ Gym Buddy

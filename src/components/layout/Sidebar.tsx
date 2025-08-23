@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Drawer,
   List,
@@ -7,49 +8,74 @@ import {
   ListItemText,
   ListItemButton,
   Box,
-  Typography
+  Typography,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
+import { useAuth } from '../../context/AuthContext';
 import {
   Dashboard,
   FitnessCenter,
   TrendingUp,
   Person,
   CalendarToday,
-  Settings
+  Settings,
+  Chat as ChatIcon,
+  Restaurant
 } from '@mui/icons-material';
 
 interface SidebarProps {
   currentPage?: string;
-  onNavigate?: (path: string) => void;
+  mobileOpen?: boolean;
+  onMobileToggle?: () => void;
 }
 
-const menuItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: <Dashboard /> },
-  { path: '/workouts', label: 'Workouts', icon: <FitnessCenter /> },
-  { path: '/progress', label: 'Progress', icon: <TrendingUp /> },
-  { path: '/profile', label: 'Profile', icon: <Person /> },
-  { path: '/schedule', label: 'Schedule', icon: <CalendarToday /> },
-  { path: '/settings', label: 'Settings', icon: <Settings /> }
-];
+export const Sidebar: React.FC<SidebarProps> = ({ currentPage, mobileOpen, onMobileToggle }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activePage = currentPage || location.pathname;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { user } = useAuth();
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
+  const menuItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: <Dashboard /> },
+    { path: '/workouts', label: 'Workouts', icon: <FitnessCenter /> },
+    { path: '/progress', label: 'Progress', icon: <TrendingUp /> },
+    { path: '/profile', label: 'Profile', icon: <Person /> },
+    { path: '/schedule', label: 'Schedule', icon: <CalendarToday /> },
+    { path: '/chat', label: 'AI Chat', icon: <ChatIcon /> },
+    ...(user?.userType === 'client' ? [{ path: '/diet', label: 'My Diet', icon: <Restaurant /> }] : []),
+    ...(user?.userType === 'trainer' ? [{ path: '/diet', label: 'Diet Plans', icon: <Restaurant /> }] : []),
+    { path: '/settings', label: 'Settings', icon: <Settings /> }
+  ];
+
   const handleItemClick = (path: string) => {
-    if (onNavigate) {
-      onNavigate(path);
+    navigate(path);
+    if (isMobile && onMobileToggle) {
+      onMobileToggle();
     }
   };
 
   return (
     <Drawer
-      variant="permanent"
+      variant={isMobile ? "temporary" : "permanent"}
+      open={isMobile ? mobileOpen : true}
+      onClose={onMobileToggle}
       sx={{
-        width: 240,
+        width: { xs: 0, md: 240 },
         flexShrink: 0,
+        zIndex: 1200,
         '& .MuiDrawer-paper': {
-          width: 240,
+          width: { xs: 280, md: 240 },
           boxSizing: 'border-box',
           backgroundColor: '#f8f9fa',
-          borderRight: '1px solid #e0e0e0'
+          borderRight: '1px solid #e0e0e0',
+          display: { xs: 'block', md: 'block' },
+          position: isMobile ? 'fixed' : 'fixed',
+          height: '100vh',
+          top: 0,
+          left: 0
         }
       }}
     >
@@ -63,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
         {menuItems.map((item) => (
           <ListItem key={item.path} disablePadding>
             <ListItemButton
-              selected={currentPage === item.path}
+              selected={activePage === item.path}
               onClick={() => handleItemClick(item.path)}
               sx={{
                 mx: 1,
@@ -79,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
             >
               <ListItemIcon 
                 sx={{ 
-                  color: currentPage === item.path ? 'white' : 'inherit',
+                  color: activePage === item.path ? 'white' : 'inherit',
                   minWidth: 40 
                 }}
               >

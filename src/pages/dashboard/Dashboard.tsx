@@ -23,6 +23,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { workoutService, Workout } from '../../services/workoutService';
+import { getDemoWorkouts } from '../../data/demoWorkouts';
 
 const Dashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -32,21 +33,29 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const fetchWorkouts = async () => {
-      if (!token) return;
+      if (!token || !user) return;
       
       try {
         setLoading(true);
         setError(null);
         
-        const response = await workoutService.getUserWorkouts(token, {
-          limit: 10,
-          page: 1
-        });
-        
-        if (response.success) {
-          setWorkouts(response.data || []);
+        // Check if this is a demo user
+        if (token.startsWith('demo_token_')) {
+          // Use demo data
+          const demoWorkouts = getDemoWorkouts(user.email);
+          setWorkouts(demoWorkouts);
         } else {
-          setError(response.message || 'Failed to load workouts');
+          // Use real API
+          const response = await workoutService.getUserWorkouts(token, {
+            limit: 10,
+            page: 1
+          });
+          
+          if (response.success) {
+            setWorkouts(response.data || []);
+          } else {
+            setError(response.message || 'Failed to load workouts');
+          }
         }
       } catch (err) {
         setError('Failed to load workouts. Please try again.');
@@ -57,7 +66,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchWorkouts();
-  }, [token]);
+  }, [token, user]);
 
   const completedWorkouts = workouts.filter(w => w.status === 'completed');
   const upcomingWorkouts = workouts.filter(w => w.status === 'planned');
@@ -72,8 +81,8 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: 600 }}>
+    <Box sx={{ p: { xs: 0, sm: 0.5, md: 1 }, maxWidth: '100%' }}>
+      <Typography variant="h4" sx={{ mb: { xs: 0.5, sm: 1 }, fontWeight: 600, color: 'text.primary' }}>
         Welcome back, {user?.firstName}! 💪
       </Typography>
 
@@ -84,10 +93,10 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={1} sx={{ mb: { xs: 2, sm: 3 } }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-            <FitnessCenter sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+                      <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center' }}>
+                               <FitnessCenter sx={{ fontSize: { xs: 32, sm: 40 }, color: 'primary.main', mb: 1 }} />
             <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
               {completedWorkouts.length}
             </Typography>
@@ -97,10 +106,10 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-            <TrendingUp sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center', height: '100%' }}>
+            <TrendingUp sx={{ fontSize: { xs: 32, sm: 40 }, color: 'success.main', mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
               {workouts.length > 0 ? Math.ceil(workouts.length / 7) : 0}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -109,10 +118,10 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-            <CalendarToday sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center', height: '100%' }}>
+            <CalendarToday sx={{ fontSize: { xs: 32, sm: 40 }, color: 'secondary.main', mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
               {upcomingWorkouts.length}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -121,10 +130,10 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-            <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center', height: '100%' }}>
+            <CheckCircle sx={{ fontSize: { xs: 32, sm: 40 }, color: 'success.main', mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
               {inProgressWorkouts.length > 0 ? 'Active' : 'Ready'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -135,8 +144,8 @@ const Dashboard: React.FC = () => {
       </Grid>
 
       {/* Recent Workouts */}
-      <Grid container spacing={3}>
-        <Grid xs={12} md={6}>
+      <Grid container spacing={1}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
@@ -172,7 +181,7 @@ const Dashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
@@ -215,7 +224,7 @@ const Dashboard: React.FC = () => {
           Quick Actions
         </Typography>
         <Grid container spacing={2}>
-          <Grid>
+          <Grid item>
             <Chip 
               label="Start Workout" 
               color="primary" 
@@ -223,7 +232,7 @@ const Dashboard: React.FC = () => {
               sx={{ cursor: 'pointer' }}
             />
           </Grid>
-          <Grid>
+          <Grid item>
             <Chip 
               label="View Progress" 
               color="secondary" 
@@ -231,7 +240,7 @@ const Dashboard: React.FC = () => {
               sx={{ cursor: 'pointer' }}
             />
           </Grid>
-          <Grid>
+          <Grid item>
             <Chip 
               label="Schedule Session" 
               color="secondary" 

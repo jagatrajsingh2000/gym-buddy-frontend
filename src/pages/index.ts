@@ -5,3 +5,7 @@ export { default as Progress } from './progress/Progress';
 export { default as Profile } from './profile/Profile';
 export { default as Schedule } from './schedule/Schedule';
 export { default as Settings } from './settings/Settings';
+export { default as Chat } from './chat/Chat';
+export { default as ClientDashboard } from './dashboard/ClientDashboard';
+export { default as ClientWorkouts } from './workouts/ClientWorkouts';
+export { default as ClientDiet } from './diet/ClientDiet';
