@@ -1,6 +1,19 @@
 // API Configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
+
+export interface ApiError {
+  message: string;
+  status: number;
+  details?: any;
+}
+
 export const api = {
   baseURL: API_BASE_URL,
   headers: {

@@ -5,12 +5,12 @@ import {
   Typography,
   Paper,
   Alert,
-  Link,
   Divider,
   Chip,
   Card,
   CardContent
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { FitnessCenter, PersonOutline, FitnessCenterOutlined, AdminPanelSettings } from '@mui/icons-material';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
@@ -156,9 +156,11 @@ const Login: React.FC = () => {
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
                 Don't have an account?{' '}
-                <Link href="/register" color="primary" sx={{ cursor: 'pointer' }}>
-                  Sign up
-                </Link>
+                <RouterLink to="/register" style={{ color: 'inherit', textDecoration: 'none' }}>
+                  <Box component="span" sx={{ color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+                    Sign up
+                  </Box>
+                </RouterLink>
               </Typography>
             </Box>
           </Box>

@@ -86,9 +86,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           firstName: demoUser.profile.firstName,
           lastName: demoUser.profile.lastName,
           phone: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profile: demoUser.profile
+          dateOfBirth: null,
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
         
         setToken(mockToken);
@@ -143,7 +144,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         userType: userData.userType || 'client',
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
-        phone: userData.phone
+        phone: userData.phone || undefined
       });
       
       if (response.success) {

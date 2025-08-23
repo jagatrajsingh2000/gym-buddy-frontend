@@ -42,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, mobileOpen, onMob
     { path: '/dashboard', label: 'Dashboard', icon: <Dashboard /> },
     { path: '/workouts', label: 'Workouts', icon: <FitnessCenter /> },
     { path: '/progress', label: 'Progress', icon: <TrendingUp /> },
+    { path: '/body-metrics', label: 'Body Metrics', icon: <FitnessCenter /> },
     { path: '/profile', label: 'Profile', icon: <Person /> },
     { path: '/schedule', label: 'Schedule', icon: <CalendarToday /> },
     { path: '/chat', label: 'AI Chat', icon: <ChatIcon /> },

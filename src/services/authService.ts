@@ -6,19 +6,24 @@ export interface User {
   firstName: string;
   lastName: string;
   userType: 'admin' | 'client' | 'trainer';
-  phone?: string;
-  createdAt: string;
-  updatedAt: string;
-  profile?: {
+  phone?: string | null;
+  dateOfBirth?: string | null;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at: string;
+  client?: {
     id: number;
-    firstName: string;
-    lastName: string;
-    permissions: string[];
-    gymName?: string;
-    specialization?: string;
-    experience?: string;
-    location?: string;
+    userId: number;
+    managementType: 'self' | 'gym' | 'trainer';
+    currentGymId: number | null;
+    currentTrainerId: number | null;
+    clientSource: 'direct' | 'referral' | 'online' | 'gym';
+    independenceRequestedAt: string | null;
+    independenceGrantedAt: string | null;
+    created_at: string;
+    updated_at: string;
   };
+  trainer?: any; // Will be populated if user has trainer relationship
 }
 
 export interface LoginRequest {
@@ -39,6 +44,7 @@ export interface ProfileUpdateRequest {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  dateOfBirth?: string;
 }
 
 export interface ChangePasswordRequest {

@@ -1,4 +1,5 @@
 export { default as Login } from './auth/Login';
+export { default as Register } from './auth/Register';
 export { default as Dashboard } from './dashboard/Dashboard';
 export { default as Workouts } from './workouts/Workouts';
 export { default as Progress } from './progress/Progress';
@@ -9,3 +10,8 @@ export { default as Chat } from './chat/Chat';
 export { default as ClientDashboard } from './dashboard/ClientDashboard';
 export { default as ClientWorkouts } from './workouts/ClientWorkouts';
 export { default as ClientDiet } from './diet/ClientDiet';
+export { default as TrainerDashboard } from './dashboard/TrainerDashboard';
+export { default as TrainerWorkouts } from './workouts/TrainerWorkouts';
+export { default as TrainerDiet } from './diet/TrainerDiet';
+export { default as AdminDashboard } from './dashboard/AdminDashboard';
+export { default as BodyMetrics } from './body-metrics/BodyMetrics';

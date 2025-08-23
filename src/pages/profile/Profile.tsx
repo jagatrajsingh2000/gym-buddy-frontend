@@ -1,582 +1,671 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
+  Container,
   Typography,
-  Card,
-  CardContent,
+  Paper,
+  TextField,
+  Button,
   Grid,
   Avatar,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Divider,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
+  Alert,
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Divider
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
   Person as PersonIcon,
-  FitnessCenter as FitnessCenterIcon,
-  Notifications as NotificationsIcon,
-  Security as SecurityIcon,
-  Palette as PaletteIcon,
-  Language as LanguageIcon,
-  AccessTime as AccessTimeIcon,
-  LocationOn as LocationIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  Height as HeightIcon,
-  Scale as ScaleIcon,
-  Favorite as HeartIcon
+  FitnessCenter as GymIcon,
+  PersonOutline as TrainerIcon,
+  Info as InfoIcon,
+  Lock as LockIcon
 } from '@mui/icons-material';
-
-// Static user profile data
-const staticUserProfile = {
-  personalInfo: {
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    dateOfBirth: "1990-05-15",
-    gender: "Male",
-    height: 72, // inches
-    weight: 175, // lbs
-    location: "New York, NY",
-    timezone: "America/New_York"
-  },
-  fitnessProfile: {
-    fitnessLevel: "Intermediate",
-    primaryGoal: "Build Muscle",
-    secondaryGoal: "Lose Fat",
-    experience: "2-3 years",
-    preferredWorkoutTime: "Morning",
-    workoutDuration: "45-60 minutes",
-    workoutFrequency: "4-5 times per week",
-    injuries: ["None"],
-    limitations: ["None"],
-    favoriteExercises: ["Squats", "Deadlifts", "Bench Press", "Pull-ups"]
-  },
-  preferences: {
-    theme: "Light",
-    language: "English",
-    units: "Imperial",
-    notifications: {
-      workoutReminders: true,
-      progressUpdates: true,
-      achievementAlerts: true,
-      weeklyReports: true,
-      marketingEmails: false
-    },
-    privacy: {
-      profileVisibility: "Public",
-      workoutHistory: "Friends Only",
-      progressSharing: "Private"
-    }
-  },
-  achievements: {
-    totalWorkouts: 156,
-    currentStreak: 12,
-    longestStreak: 45,
-    totalWeightLifted: "2,450,000 lbs",
-    totalDistance: "1,250 miles",
-    totalCalories: "125,000 cal",
-    badges: [
-      { name: "First Workout", date: "2023-01-15", icon: "🎯" },
-      { name: "10 Workouts", date: "2023-02-20", icon: "💪" },
-      { name: "50 Workouts", date: "2023-06-15", icon: "🏆" },
-      { name: "100 Workouts", date: "2023-12-01", icon: "👑" },
-      { name: "30 Day Streak", date: "2024-01-15", icon: "🔥" }
-    ]
-  }
-};
+import { useAuth } from '../../context/AuthContext';
+import { authService, clientService, ClientProfileData, UpdateClientProfileData, UpdateUserProfileData } from '../../services';
 
 const Profile: React.FC = () => {
-  const [profile, setProfile] = useState(staticUserProfile);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState(profile.personalInfo);
-  const [openPreferences, setOpenPreferences] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const { user: authUser, token, updateProfile } = useAuth();
+  const [profile, setProfile] = useState<ClientProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const handleEditToggle = () => {
-    if (isEditing) {
-      // Cancel editing
-      setEditForm(profile.personalInfo);
-    }
-    setIsEditing(!isEditing);
-  };
+  // Edit states
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editType, setEditType] = useState<'user' | 'client' | 'password' | null>(null);
+  const [userFormData, setUserFormData] = useState<UpdateUserProfileData>({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    dateOfBirth: ''
+  });
+  const [clientFormData, setClientFormData] = useState<UpdateClientProfileData>({
+    managementType: 'self',
+    clientSource: 'direct'
+  });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
 
-  const handleSave = () => {
-    setProfile({
-      ...profile,
-      personalInfo: editForm
-    });
-    setIsEditing(false);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
-  };
+  // Fetch profile data
+  const fetchProfile = async () => {
+    if (!token || !authUser) return;
 
-  const handleInputChange = (field: string, value: string | number) => {
-    setEditForm({
-      ...editForm,
-      [field]: value
-    });
-  };
+    try {
+      setLoading(true);
+      setError(null);
 
-  const handleNotificationChange = (setting: string, value: boolean) => {
-    setProfile({
-      ...profile,
-      preferences: {
-        ...profile.preferences,
-        notifications: {
-          ...profile.preferences.notifications,
-          [setting]: value
+      // Use the general profile endpoint which returns nested client data
+      const response = await authService.getProfile(token);
+      
+      if (response.success && response.data) {
+        const userData = response.data.user;
+        
+        if (userData.userType === 'client' && userData.client) {
+          // Create profile structure from API response
+          const profileData: ClientProfileData = {
+            id: userData.client.id,
+            userId: userData.client.userId,
+            managementType: userData.client.managementType,
+            currentGymId: userData.client.currentGymId,
+            currentTrainerId: userData.client.currentTrainerId,
+            clientSource: userData.client.clientSource,
+            independenceRequestedAt: userData.client.independenceRequestedAt,
+            independenceGrantedAt: userData.client.independenceGrantedAt,
+            created_at: userData.client.created_at,
+            updated_at: userData.client.updated_at,
+            user: {
+              id: userData.id,
+              email: userData.email,
+              userType: userData.userType,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              phone: userData.phone,
+              dateOfBirth: userData.dateOfBirth,
+              status: userData.status,
+              created_at: userData.created_at,
+              updated_at: userData.updated_at
+            },
+            gym: null, // Will be populated if currentGymId exists
+            trainer: userData.trainer || null
+          };
+          
+          setProfile(profileData);
+          
+          // Initialize form data
+          setUserFormData({
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            phone: userData.phone || '',
+            dateOfBirth: userData.dateOfBirth || ''
+          });
+          
+          setClientFormData({
+            managementType: userData.client.managementType,
+            clientSource: userData.client.clientSource
+          });
+        } else {
+          // For non-client users, create basic profile structure
+          const basicProfile: ClientProfileData = {
+            id: 0,
+            userId: userData.id,
+            managementType: 'self',
+            currentGymId: null,
+            currentTrainerId: null,
+            clientSource: 'direct',
+            independenceRequestedAt: null,
+            independenceGrantedAt: null,
+            created_at: userData.created_at || new Date().toISOString(),
+            updated_at: userData.updated_at || new Date().toISOString(),
+            user: {
+              id: userData.id,
+              email: userData.email,
+              userType: userData.userType as 'client',
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              phone: userData.phone,
+              dateOfBirth: userData.dateOfBirth,
+              status: userData.status,
+              created_at: userData.created_at,
+              updated_at: userData.updated_at
+            },
+            gym: null,
+            trainer: null
+          };
+          
+          setProfile(basicProfile);
+          setUserFormData({
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            phone: userData.phone || '',
+            dateOfBirth: userData.dateOfBirth || ''
+          });
         }
+      } else {
+        setError(response.message || 'Failed to load profile');
       }
-    });
-  };
-
-  const handlePrivacyChange = (setting: string, value: string) => {
-    setProfile({
-      ...profile,
-      preferences: {
-        ...profile.preferences,
-        privacy: {
-          ...profile.preferences.privacy,
-          [setting]: value
-        }
-      }
-    });
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
+    } catch (err) {
+      console.error('Failed to fetch profile:', err);
+      setError('Failed to load profile. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    return age;
   };
+
+  useEffect(() => {
+    fetchProfile();
+  }, [token, authUser]);
+
+  // Handle user profile update
+  const handleUserProfileUpdate = async () => {
+    if (!token || !profile) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      const response = await clientService.updateUserProfile(token, userFormData);
+
+      if (response.success && response.data) {
+        // Update local profile data
+        setProfile(prev => prev ? {
+          ...prev,
+          user: {
+            ...prev.user,
+            ...userFormData
+          }
+        } : null);
+
+        // Update auth context
+        if (updateProfile) {
+          await updateProfile(response.data);
+        }
+
+        setSuccess('User profile updated successfully');
+        setEditDialogOpen(false);
+      } else {
+        setError(response.message || 'Failed to update user profile');
+      }
+    } catch (err) {
+      console.error('Failed to update user profile:', err);
+      setError('Failed to update user profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle client profile update
+  const handleClientProfileUpdate = async () => {
+    if (!token || !profile) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      const response = await clientService.updateClientProfile(token, clientFormData);
+
+      if (response.success && response.data) {
+        setProfile(response.data.client);
+        setSuccess('Client profile updated successfully');
+        setEditDialogOpen(false);
+      } else {
+        setError(response.message || 'Failed to update client profile');
+      }
+    } catch (err) {
+      console.error('Failed to update client profile:', err);
+      setError('Failed to update client profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle password change
+  const handlePasswordChange = async () => {
+    if (!token || passwordData.newPassword !== passwordData.confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      const response = await updateProfile({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+
+      if (response) {
+        setSuccess('Password changed successfully');
+        setEditDialogOpen(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        setError('Failed to change password');
+      }
+    } catch (err) {
+      console.error('Failed to change password:', err);
+      setError('Failed to change password. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Open edit dialog
+  const openEditDialog = (type: 'user' | 'client' | 'password') => {
+    setEditType(type);
+    setEditDialogOpen(true);
+    setError(null);
+    setSuccess(null);
+  };
+
+  // Get management type color
+  const getManagementTypeColor = (type: string) => {
+    switch (type) {
+      case 'self': return 'success';
+      case 'gym': return 'primary';
+      case 'trainer': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  // Get client source color
+  const getClientSourceColor = (source: string) => {
+    switch (source) {
+      case 'direct': return 'success';
+      case 'referral': return 'info';
+      case 'online': return 'warning';
+      case 'gym': return 'primary';
+      default: return 'default';
+    }
+  };
+
+  if (loading || !authUser) {
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (!profile || !profile.user) {
+    if (error) {
+      return (
+        <Container maxWidth="md">
+          <Alert severity="error" sx={{ mt: 4 }}>
+            {error}
+          </Alert>
+        </Container>
+      );
+    }
+    return (
+      <Container maxWidth="md">
+        <Alert severity="info" sx={{ mt: 4 }}>
+          Loading profile information...
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
-    <Box>
-      {/* Success Alert */}
-      {showSuccess && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          Profile updated successfully!
-        </Alert>
-      )}
+    <Container maxWidth="md">
+      <Box sx={{ mt: 4, mb: 4 }}>
+        {/* Success/Error Messages */}
+        {success && (
+          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess(null)}>
+            {success}
+          </Alert>
+        )}
 
-      {/* Header */}
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Profile
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage your personal information and preferences
-          </Typography>
-        </Box>
-        <Button
-          variant={isEditing ? "outlined" : "contained"}
-          startIcon={isEditing ? <CancelIcon /> : <EditIcon />}
-          onClick={handleEditToggle}
-        >
-          {isEditing ? "Cancel" : "Edit Profile"}
-        </Button>
-      </Box>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-      <Grid container spacing={3}>
-        {/* Personal Information */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6">Personal Information</Typography>
+        {/* Header Section */}
+        <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <Avatar
+              sx={{
+                width: 80,
+                height: 80,
+                bgcolor: 'primary.main',
+                mr: 3,
+                fontSize: 32
+              }}
+            >
+              {profile.user.firstName.charAt(0)}{profile.user.lastName.charAt(0)}
+            </Avatar>
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                {profile.user.firstName} {profile.user.lastName}
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                {profile.user.email}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  label={`Role: ${profile.user.userType.charAt(0).toUpperCase() + profile.user.userType.slice(1)}`}
+                  color="primary"
+                  size="small"
+                />
+                <Chip
+                  label={profile.user.status === 'active' ? 'Active' : 'Inactive'}
+                  color={profile.user.status === 'active' ? 'success' : 'default'}
+                  size="small"
+                />
               </Box>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="First Name"
-                    value={isEditing ? editForm.firstName : profile.personalInfo.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    disabled={!isEditing}
-                    margin="normal"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Last Name"
-                    value={isEditing ? editForm.lastName : profile.personalInfo.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    disabled={!isEditing}
-                    margin="normal"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    value={isEditing ? editForm.email : profile.personalInfo.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    disabled={!isEditing}
-                    margin="normal"
-                    type="email"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Phone"
-                    value={isEditing ? editForm.phone : profile.personalInfo.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    disabled={!isEditing}
-                    margin="normal"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Date of Birth"
-                    value={isEditing ? editForm.dateOfBirth : profile.personalInfo.dateOfBirth}
-                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                    disabled={!isEditing}
-                    margin="normal"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel>Gender</InputLabel>
-                    <Select
-                      value={isEditing ? editForm.gender : profile.personalInfo.gender}
-                      label="Gender"
-                      onChange={(e) => handleInputChange('gender', e.target.value)}
-                      disabled={!isEditing}
-                    >
-                      <MenuItem value="Male">Male</MenuItem>
-                      <MenuItem value="Female">Female</MenuItem>
-                      <MenuItem value="Other">Other</MenuItem>
-                      <MenuItem value="Prefer not to say">Prefer not to say</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Height (inches)"
-                    value={isEditing ? editForm.height : profile.personalInfo.height}
-                    onChange={(e) => handleInputChange('height', Number(e.target.value))}
-                    disabled={!isEditing}
-                    margin="normal"
-                    type="number"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Weight (lbs)"
-                    value={isEditing ? editForm.weight : profile.personalInfo.weight}
-                    onChange={(e) => handleInputChange('weight', Number(e.target.value))}
-                    disabled={!isEditing}
-                    margin="normal"
-                    type="number"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Location"
-                    value={isEditing ? editForm.location : profile.personalInfo.location}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
-                    disabled={!isEditing}
-                    margin="normal"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Age"
-                    value={calculateAge(profile.personalInfo.dateOfBirth)}
-                    disabled
-                    margin="normal"
-                    InputProps={{
-                      readOnly: true,
-                    }}
-                  />
-                </Grid>
-              </Grid>
-
-              {isEditing && (
-                <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-                  <Button
-                    variant="contained"
-                    startIcon={<SaveIcon />}
-                    onClick={handleSave}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Fitness Profile */}
-          <Card sx={{ mt: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <FitnessCenterIcon sx={{ mr: 1, color: 'secondary.main' }} />
-                <Typography variant="h6">Fitness Profile</Typography>
-              </Box>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Fitness Level</Typography>
-                  <Typography variant="body1" gutterBottom>{profile.fitnessProfile.fitnessLevel}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Primary Goal</Typography>
-                  <Typography variant="body1" gutterBottom>{profile.fitnessProfile.primaryGoal}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Experience</Typography>
-                  <Typography variant="body1" gutterBottom>{profile.fitnessProfile.experience}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Workout Frequency</Typography>
-                  <Typography variant="body1" gutterBottom>{profile.fitnessProfile.workoutFrequency}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary">Favorite Exercises</Typography>
-                  <Box sx={{ mt: 1 }}>
-                    {profile.fitnessProfile.favoriteExercises.map((exercise, index) => (
-                      <Chip
-                        key={index}
-                        label={exercise}
-                        size="small"
-                        sx={{ mr: 1, mb: 1 }}
-                      />
-                    ))}
-                  </Box>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Sidebar */}
-        <Grid item xs={12} md={4}>
-          {/* Profile Avatar & Stats */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar
-                sx={{
-                  width: 120,
-                  height: 120,
-                  mx: 'auto',
-                  mb: 2,
-                  fontSize: '3rem',
-                  bgcolor: 'primary.main'
-                }}
-              >
-                {profile.personalInfo.firstName[0]}{profile.personalInfo.lastName[0]}
-              </Avatar>
-              <Typography variant="h5" gutterBottom>
-                {profile.personalInfo.firstName} {profile.personalInfo.lastName}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                {profile.fitnessProfile.fitnessLevel} • {profile.fitnessProfile.primaryGoal}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Member since {formatDate('2023-01-01')}
-              </Typography>
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Quick Stats</Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon>
-                    <FitnessCenterIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`${profile.achievements.totalWorkouts} workouts`}
-                    secondary="Total completed"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <HeartIcon color="error" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`${profile.achievements.currentStreak} days`}
-                    secondary="Current streak"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <ScaleIcon color="info" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`${profile.personalInfo.weight} lbs`}
-                    secondary="Current weight"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <HeightIcon color="secondary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`${profile.personalInfo.height}"`}
-                    secondary="Height"
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
-
-          {/* Preferences Button */}
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<PaletteIcon />}
-            onClick={() => setOpenPreferences(true)}
-          >
-            Preferences
-          </Button>
-        </Grid>
-      </Grid>
-
-      {/* Preferences Dialog */}
-      <Dialog open={openPreferences} onClose={() => setOpenPreferences(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Preferences & Settings</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <Grid container spacing={3}>
-              {/* Notifications */}
-              <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>Notifications</Typography>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={profile.preferences.notifications.workoutReminders}
-                      onChange={(e) => handleNotificationChange('workoutReminders', e.target.checked)}
-                    />
-                  }
-                  label="Workout Reminders"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={profile.preferences.notifications.progressUpdates}
-                      onChange={(e) => handleNotificationChange('progressUpdates', e.target.checked)}
-                    />
-                  }
-                  label="Progress Updates"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={profile.preferences.notifications.achievementAlerts}
-                      onChange={(e) => handleNotificationChange('achievementAlerts', e.target.checked)}
-                    />
-                  }
-                  label="Achievement Alerts"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={profile.preferences.notifications.weeklyReports}
-                      onChange={(e) => handleNotificationChange('weeklyReports', e.target.checked)}
-                    />
-                  }
-                  label="Weekly Reports"
-                />
-              </Grid>
-
-              {/* Privacy */}
-              <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>Privacy</Typography>
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Profile Visibility</InputLabel>
-                  <Select
-                    value={profile.preferences.privacy.profileVisibility}
-                    label="Profile Visibility"
-                    onChange={(e) => handlePrivacyChange('profileVisibility', e.target.value)}
-                  >
-                    <MenuItem value="Public">Public</MenuItem>
-                    <MenuItem value="Friends Only">Friends Only</MenuItem>
-                    <MenuItem value="Private">Private</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Workout History</InputLabel>
-                  <Select
-                    value={profile.preferences.privacy.workoutHistory}
-                    label="Workout History"
-                    onChange={(e) => handlePrivacyChange('workoutHistory', e.target.value)}
-                  >
-                    <MenuItem value="Public">Public</MenuItem>
-                    <MenuItem value="Friends Only">Friends Only</MenuItem>
-                    <MenuItem value="Private">Private</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <FormControl fullWidth>
-                  <InputLabel>Progress Sharing</InputLabel>
-                  <Select
-                    value={profile.preferences.privacy.progressSharing}
-                    label="Progress Sharing"
-                    onChange={(e) => handlePrivacyChange('progressSharing', e.target.value)}
-                  >
-                    <MenuItem value="Public">Public</MenuItem>
-                    <MenuItem value="Friends Only">Friends Only</MenuItem>
-                    <MenuItem value="Private">Private</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<EditIcon />}
+              onClick={() => openEditDialog('user')}
+            >
+              Edit Profile
+            </Button>
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenPreferences(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        </Paper>
+
+        {/* Basic Information */}
+        <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="h6">Basic Information</Typography>
+          </Box>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="First Name"
+                value={profile.user.firstName}
+                InputProps={{ readOnly: true }}
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Last Name"
+                value={profile.user.lastName}
+                InputProps={{ readOnly: true }}
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                value={profile.user.phone || 'Not provided'}
+                InputProps={{ readOnly: true }}
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Date of Birth"
+                value={profile.user.dateOfBirth || 'Not provided'}
+                InputProps={{ readOnly: true }}
+                variant="outlined"
+              />
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {/* Client-specific sections */}
+        {authUser.userType === 'client' && (
+          <>
+            {/* Management Preferences */}
+            <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <GymIcon sx={{ mr: 1, color: 'secondary.main' }} />
+                  <Typography variant="h6">Management Preferences</Typography>
+                </Box>
+                <Button size="small" onClick={() => openEditDialog('client')}>
+                  Edit
+                </Button>
+              </Box>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Management Type:
+                  </Typography>
+                  <Chip 
+                    label={profile.managementType} 
+                    color={getManagementTypeColor(profile.managementType)} 
+                    size="small" 
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Client Source:
+                  </Typography>
+                  <Typography>{profile.clientSource}</Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+
+            {/* Current Relationships */}
+            <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <TrainerIcon sx={{ mr: 1, color: 'info.main' }} />
+                <Typography variant="h6">Current Relationships</Typography>
+              </Box>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Current Gym:
+                  </Typography>
+                  {profile.gym ? (
+                    <Chip label={profile.gym.name} color="primary" size="small" />
+                  ) : (
+                    <Typography variant="body2">No active gym</Typography>
+                  )}
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Current Trainer:
+                  </Typography>
+                  {profile.trainer ? (
+                    <Chip 
+                      label={`${profile.trainer.user.firstName} ${profile.trainer.user.lastName}`} 
+                      color="secondary" 
+                      size="small" 
+                    />
+                  ) : (
+                    <Typography variant="body2">No active trainer</Typography>
+                  )}
+                </Grid>
+              </Grid>
+            </Paper>
+
+            {/* Independence Status */}
+            <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <InfoIcon sx={{ mr: 1, color: 'warning.main' }} />
+                <Typography variant="h6">Independence Status</Typography>
+              </Box>
+              {profile.independenceGrantedAt ? (
+                <Typography>
+                  Independence Granted: {new Date(profile.independenceGrantedAt).toLocaleDateString()}
+                </Typography>
+              ) : profile.independenceRequestedAt ? (
+                <Typography>
+                  Independence Requested: {new Date(profile.independenceRequestedAt).toLocaleDateString()} (Pending)
+                </Typography>
+              ) : (
+                <Typography>No independence requests</Typography>
+              )}
+            </Paper>
+          </>
+        )}
+
+        {/* Security Section */}
+        <Paper elevation={2} sx={{ p: 3, mt: 3, borderRadius: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <LockIcon sx={{ mr: 1, color: 'warning.main' }} />
+              <Typography variant="h6">Security</Typography>
+            </Box>
+            <Button size="small" onClick={() => openEditDialog('password')}>
+              Change Password
+            </Button>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            Last updated: {new Date(profile.user.updated_at).toLocaleDateString()}
+          </Typography>
+        </Paper>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            {editType === 'user' ? 'Edit Basic Information' : 
+             editType === 'client' ? 'Edit Management Preferences' : 
+             'Change Password'}
+          </DialogTitle>
+          <DialogContent>
+            {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
+            {success && <Alert severity="success" sx={{ my: 2 }}>{success}</Alert>}
+            
+            {editType === 'user' && (
+              <Box component="form" sx={{ mt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  name="firstName"
+                  value={userFormData.firstName}
+                  onChange={(e) => setUserFormData({ ...userFormData, firstName: e.target.value })}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  name="lastName"
+                  value={userFormData.lastName}
+                  onChange={(e) => setUserFormData({ ...userFormData, lastName: e.target.value })}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Phone"
+                  name="phone"
+                  value={userFormData.phone}
+                  onChange={(e) => setUserFormData({ ...userFormData, phone: e.target.value })}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Date of Birth"
+                  name="dateOfBirth"
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                  value={userFormData.dateOfBirth}
+                  onChange={(e) => setUserFormData({ ...userFormData, dateOfBirth: e.target.value })}
+                  sx={{ mb: 2 }}
+                />
+              </Box>
+            )}
+
+            {editType === 'client' && (
+              <Box component="form" sx={{ mt: 2 }}>
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Management Type</InputLabel>
+                  <Select
+                    label="Management Type"
+                    name="managementType"
+                    value={clientFormData.managementType}
+                    onChange={(e) => setClientFormData({ ...clientFormData, managementType: e.target.value as any })}
+                  >
+                    <MenuItem value="self">Self-Managed</MenuItem>
+                    <MenuItem value="gym">Gym-Managed</MenuItem>
+                    <MenuItem value="trainer">Trainer-Managed</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Client Source</InputLabel>
+                  <Select
+                    label="Client Source"
+                    name="clientSource"
+                    value={clientFormData.clientSource}
+                    onChange={(e) => setClientFormData({ ...clientFormData, clientSource: e.target.value as any })}
+                  >
+                    <MenuItem value="direct">Direct</MenuItem>
+                    <MenuItem value="referral">Referral</MenuItem>
+                    <MenuItem value="online">Online</MenuItem>
+                    <MenuItem value="gym">Gym</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+
+            {editType === 'password' && (
+              <Box component="form" sx={{ mt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Current Password"
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="New Password"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Confirm New Password"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  sx={{ mb: 2 }}
+                />
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditDialogOpen(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={
+                editType === 'user' ? handleUserProfileUpdate :
+                editType === 'client' ? handleClientProfileUpdate :
+                handlePasswordChange
+              } 
+              disabled={saving} 
+              startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </Container>
   );
 };
 

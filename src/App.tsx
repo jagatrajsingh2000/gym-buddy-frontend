@@ -6,7 +6,7 @@ import { theme } from './theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
-import { Login, Dashboard, Workouts, Progress, Profile, Schedule, Settings, Chat } from './pages';
+import { Login, Register, Dashboard, Workouts, Progress, Profile, Schedule, Settings, Chat, BodyMetrics } from './pages';
 import ClientDashboard from './pages/dashboard/ClientDashboard';
 import ClientWorkouts from './pages/workouts/ClientWorkouts';
 import ClientDiet from './pages/diet/ClientDiet';
@@ -68,6 +68,7 @@ const MainLayout: React.FC = () => {
                    user?.userType === 'trainer' ? <TrainerDiet /> : 
                    <Navigate to="/dashboard" replace />
                  } />
+                 <Route path="/body-metrics" element={<BodyMetrics />} />
                  <Route path="/settings" element={<Settings />} />
                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
                </Routes>
@@ -85,6 +86,7 @@ const App: React.FC = () => {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/*" element={
               <ProtectedRoute>
                 <MainLayout />

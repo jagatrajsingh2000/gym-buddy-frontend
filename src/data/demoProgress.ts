@@ -1,13 +1,28 @@
 export interface ProgressData {
   currentStats: {
     weight: number;
+    height: number; // Height in cm
+    bmi: number; // Calculated BMI
     bodyFat: number;
     muscleMass: number;
     strengthScore: number;
+    bodyMeasurements: {
+      chest: number;
+      waist: number;
+      hips: number;
+      leftArm: number;
+      rightArm: number;
+      leftThigh: number;
+      rightThigh: number;
+      leftCalf: number;
+      rightCalf: number;
+    };
   };
   weeklyProgress: {
     date: string;
     weight: number;
+    height: number;
+    bmi: number;
     workouts: number;
     calories: number;
   }[];
@@ -31,15 +46,28 @@ export const demoProgressData: { [key: string]: ProgressData } = {
   'client@gymbuddy.com': {
     currentStats: {
       weight: 68.5,
+      height: 170, // 5'7"
+      bmi: 23.7,
       bodyFat: 22,
       muscleMass: 35,
-      strengthScore: 65
+      strengthScore: 65,
+      bodyMeasurements: {
+        chest: 95,
+        waist: 78,
+        hips: 95,
+        leftArm: 28,
+        rightArm: 28,
+        leftThigh: 52,
+        rightThigh: 52,
+        leftCalf: 35,
+        rightCalf: 35
+      }
     },
     weeklyProgress: [
-      { date: '2024-01-01', weight: 70, workouts: 3, calories: 1800 },
-      { date: '2024-01-08', weight: 69.5, workouts: 4, calories: 1850 },
-      { date: '2024-01-15', weight: 69, workouts: 4, calories: 1900 },
-      { date: '2024-01-22', weight: 68.5, workouts: 5, calories: 1950 }
+      { date: '2024-01-01', weight: 70, height: 170, bmi: 24.2, workouts: 3, calories: 1800 },
+      { date: '2024-01-08', weight: 69.5, height: 170, bmi: 24.0, workouts: 4, calories: 1850 },
+      { date: '2024-01-15', weight: 69, height: 170, bmi: 23.9, workouts: 4, calories: 1900 },
+      { date: '2024-01-22', weight: 68.5, height: 170, bmi: 23.7, workouts: 5, calories: 1950 }
     ],
     strengthGains: [
       { exercise: 'Push-ups', previousMax: 8, currentMax: 15, improvement: 87.5 },
@@ -56,15 +84,28 @@ export const demoProgressData: { [key: string]: ProgressData } = {
   'alex.client@gymbuddy.com': {
     currentStats: {
       weight: 75.2,
+      height: 180, // 5'11"
+      bmi: 23.2,
       bodyFat: 18,
       muscleMass: 42,
-      strengthScore: 78
+      strengthScore: 78,
+      bodyMeasurements: {
+        chest: 105,
+        waist: 82,
+        hips: 98,
+        leftArm: 32,
+        rightArm: 32,
+        leftThigh: 58,
+        rightThigh: 58,
+        leftCalf: 38,
+        rightCalf: 38
+      }
     },
     weeklyProgress: [
-      { date: '2024-01-01', weight: 76, workouts: 4, calories: 2200 },
-      { date: '2024-01-08', weight: 75.8, workouts: 5, calories: 2250 },
-      { date: '2024-01-15', weight: 75.5, workouts: 5, calories: 2300 },
-      { date: '2024-01-22', weight: 75.2, workouts: 6, calories: 2350 }
+      { date: '2024-01-01', weight: 76, height: 180, bmi: 23.5, workouts: 4, calories: 2200 },
+      { date: '2024-01-08', weight: 75.8, height: 180, bmi: 23.4, workouts: 5, calories: 2250 },
+      { date: '2024-01-15', weight: 75.5, height: 180, bmi: 23.3, workouts: 5, calories: 2300 },
+      { date: '2024-01-22', weight: 75.2, height: 180, bmi: 23.2, workouts: 6, calories: 2350 }
     ],
     strengthGains: [
       { exercise: 'Deadlifts', previousMax: 135, currentMax: 185, improvement: 37 },
@@ -81,15 +122,28 @@ export const demoProgressData: { [key: string]: ProgressData } = {
   'maria.client@gymbuddy.com': {
     currentStats: {
       weight: 62.8,
+      height: 165, // 5'5"
+      bmi: 23.1,
       bodyFat: 15,
       muscleMass: 38,
-      strengthScore: 92
+      strengthScore: 92,
+      bodyMeasurements: {
+        chest: 88,
+        waist: 70,
+        hips: 92,
+        leftArm: 26,
+        rightArm: 26,
+        leftThigh: 48,
+        rightThigh: 48,
+        leftCalf: 32,
+        rightCalf: 32
+      }
     },
     weeklyProgress: [
-      { date: '2024-01-01', weight: 63, workouts: 5, calories: 2500 },
-      { date: '2024-01-08', weight: 62.9, workouts: 6, calories: 2550 },
-      { date: '2024-01-15', weight: 62.8, workouts: 6, calories: 2600 },
-      { date: '2024-01-22', weight: 62.8, workouts: 7, calories: 2650 }
+      { date: '2024-01-01', weight: 63, height: 165, bmi: 23.1, workouts: 5, calories: 2500 },
+      { date: '2024-01-08', weight: 62.9, height: 165, bmi: 23.1, workouts: 6, calories: 2550 },
+      { date: '2024-01-15', weight: 62.8, height: 165, bmi: 23.1, workouts: 6, calories: 2600 },
+      { date: '2024-01-22', weight: 62.8, height: 165, bmi: 23.1, workouts: 7, calories: 2650 }
     ],
     strengthGains: [
       { exercise: 'Squats', previousMax: 225, currentMax: 275, improvement: 22.2 },
@@ -107,15 +161,28 @@ export const demoProgressData: { [key: string]: ProgressData } = {
   'trainer@gymbuddy.com': {
     currentStats: {
       weight: 70.5,
+      height: 175, // 5'9"
+      bmi: 23.0,
       bodyFat: 16,
       muscleMass: 40,
-      strengthScore: 85
+      strengthScore: 85,
+      bodyMeasurements: {
+        chest: 100,
+        waist: 76,
+        hips: 96,
+        leftArm: 30,
+        rightArm: 30,
+        leftThigh: 54,
+        rightThigh: 54,
+        leftCalf: 36,
+        rightCalf: 36
+      }
     },
     weeklyProgress: [
-      { date: '2024-01-01', weight: 70.5, workouts: 6, calories: 2400 },
-      { date: '2024-01-08', weight: 70.5, workouts: 6, calories: 2400 },
-      { date: '2024-01-15', weight: 70.5, workouts: 7, calories: 2450 },
-      { date: '2024-01-22', weight: 70.5, workouts: 7, calories: 2450 }
+      { date: '2024-01-01', weight: 70.5, height: 175, bmi: 23.0, workouts: 6, calories: 2400 },
+      { date: '2024-01-08', weight: 70.5, height: 175, bmi: 23.0, workouts: 6, calories: 2400 },
+      { date: '2024-01-15', weight: 70.5, height: 175, bmi: 23.0, workouts: 7, calories: 2450 },
+      { date: '2024-01-22', weight: 70.5, height: 175, bmi: 23.0, workouts: 7, calories: 2450 }
     ],
     strengthGains: [
       { exercise: 'Bench Press', previousMax: 185, currentMax: 205, improvement: 10.8 },
@@ -132,15 +199,28 @@ export const demoProgressData: { [key: string]: ProgressData } = {
   'mike.trainer@gymbuddy.com': {
     currentStats: {
       weight: 73.2,
+      height: 178, // 5'10"
+      bmi: 23.1,
       bodyFat: 14,
       muscleMass: 41,
-      strengthScore: 88
+      strengthScore: 88,
+      bodyMeasurements: {
+        chest: 102,
+        waist: 78,
+        hips: 98,
+        leftArm: 31,
+        rightArm: 31,
+        leftThigh: 56,
+        rightThigh: 56,
+        leftCalf: 37,
+        rightCalf: 37
+      }
     },
     weeklyProgress: [
-      { date: '2024-01-01', weight: 73.2, workouts: 5, calories: 2600 },
-      { date: '2024-01-08', weight: 73.2, workouts: 6, calories: 2650 },
-      { date: '2024-01-15', weight: 73.2, workouts: 6, calories: 2700 },
-      { date: '2024-01-22', weight: 73.2, workouts: 7, calories: 2750 }
+      { date: '2024-01-01', weight: 73.2, height: 178, bmi: 23.1, workouts: 5, calories: 2600 },
+      { date: '2024-01-08', weight: 73.2, height: 178, bmi: 23.1, workouts: 6, calories: 2650 },
+      { date: '2024-01-15', weight: 73.2, height: 178, bmi: 23.1, workouts: 6, calories: 2700 },
+      { date: '2024-01-22', weight: 73.2, height: 178, bmi: 23.1, workouts: 7, calories: 2750 }
     ],
     strengthGains: [
       { exercise: 'Clean & Jerk', previousMax: 155, currentMax: 175, improvement: 12.9 },
@@ -158,15 +238,28 @@ export const demoProgressData: { [key: string]: ProgressData } = {
   'admin@gymbuddy.com': {
     currentStats: {
       weight: 0,
+      height: 0,
+      bmi: 0,
       bodyFat: 0,
       muscleMass: 0,
-      strengthScore: 0
+      strengthScore: 0,
+      bodyMeasurements: {
+        chest: 0,
+        waist: 0,
+        hips: 0,
+        leftArm: 0,
+        rightArm: 0,
+        leftThigh: 0,
+        rightThigh: 0,
+        leftCalf: 0,
+        rightCalf: 0
+      }
     },
     weeklyProgress: [
-      { date: '2024-01-01', weight: 0, workouts: 0, calories: 0 },
-      { date: '2024-01-08', weight: 0, workouts: 0, calories: 0 },
-      { date: '2024-01-15', weight: 0, workouts: 0, calories: 0 },
-      { date: '2024-01-22', weight: 0, workouts: 0, calories: 0 }
+      { date: '2024-01-01', weight: 0, height: 0, bmi: 0, workouts: 0, calories: 0 },
+      { date: '2024-01-08', weight: 0, height: 0, bmi: 0, workouts: 0, calories: 0 },
+      { date: '2024-01-15', weight: 0, height: 0, bmi: 0, workouts: 0, calories: 0 },
+      { date: '2024-01-22', weight: 0, height: 0, bmi: 0, workouts: 0, calories: 0 }
     ],
     strengthGains: [],
     achievements: [

@@ -59,7 +59,7 @@ const Progress: React.FC = () => {
 
       {/* Current Stats Cards */}
       <Grid container spacing={1} sx={{ mb: { xs: 2, sm: 3 } }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2}>
           <Card>
             <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
               <Scale sx={{ fontSize: { xs: 32, sm: 40 }, color: 'primary.main', mb: 1 }} />
@@ -67,27 +67,41 @@ const Progress: React.FC = () => {
                 {progressData.currentStats.weight} kg
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Current Weight
+                Weight
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2}>
           <Card>
             <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
-              <FitnessCenter sx={{ fontSize: { xs: 32, sm: 40 }, color: 'secondary.main', mb: 1 }} />
+              <TrendingUp sx={{ fontSize: { xs: 32, sm: 40 }, color: 'success.main', mb: 1 }} />
               <Typography variant="h4" component="div" gutterBottom>
-                {progressData.currentStats.muscleMass}%
+                {progressData.currentStats.height} cm
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Muscle Mass
+                Height
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
+              <FitnessCenter sx={{ fontSize: { xs: 32, sm: 40 }, color: 'warning.main', mb: 1 }} />
+              <Typography variant="h4" component="div" gutterBottom>
+                {progressData.currentStats.bmi}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                BMI
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2}>
           <Card>
             <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
               <TrendingUp sx={{ fontSize: { xs: 32, sm: 40 }, color: 'info.main', mb: 1 }} />
@@ -101,7 +115,21 @@ const Progress: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
+              <FitnessCenter sx={{ fontSize: { xs: 32, sm: 40 }, color: 'secondary.main', mb: 1 }} />
+              <Typography variant="h4" component="div" gutterBottom>
+                {progressData.currentStats.muscleMass}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Muscle Mass
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2}>
           <Card>
             <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
               <Favorite sx={{ fontSize: { xs: 32, sm: 40 }, color: 'error.main', mb: 1 }} />
@@ -181,6 +209,78 @@ const Progress: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Body Measurements */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+            <FitnessCenter sx={{ mr: 1, color: 'info.main' }} />
+            Body Measurements (cm)
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Typography variant="h6" color="primary.main" sx={{ mb: 1 }}>
+                  {progressData.currentStats.bodyMeasurements.chest}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Chest
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Typography variant="h6" color="secondary.main" sx={{ mb: 1 }}>
+                  {progressData.currentStats.bodyMeasurements.waist}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Waist
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Typography variant="h6" color="success.main" sx={{ mb: 1 }}>
+                  {progressData.currentStats.bodyMeasurements.hips}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Hips
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Typography variant="h6" color="warning.main" sx={{ mb: 1 }}>
+                  {progressData.currentStats.bodyMeasurements.leftArm}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Arms
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Typography variant="h6" color="info.main" sx={{ mb: 1 }}>
+                  {progressData.currentStats.bodyMeasurements.leftThigh}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Thighs
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Typography variant="h6" color="error.main" sx={{ mb: 1 }}>
+                  {progressData.currentStats.bodyMeasurements.leftCalf}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Calves
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       {/* Achievements */}
       <Card>
