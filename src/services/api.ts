@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -41,13 +41,22 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // For non-200 responses, try to parse error data
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP error! status: ${response.status}` };
+      }
+      
+      // Throw error for backward compatibility with existing services
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    return data;
+    return data; // Return data directly for backward compatibility
   } catch (error) {
     console.error('API call failed:', error);
-    throw error;
+    throw error; // Re-throw for backward compatibility
   }
 };

@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Login, Register, Dashboard, Workouts, Progress, Profile, Schedule, Settings, Chat, BodyMetrics } from './pages';
+import TestAuth from './pages/TestAuth';
 import ClientDashboard from './pages/dashboard/ClientDashboard';
 import ClientWorkouts from './pages/workouts/ClientWorkouts';
 import ClientDiet from './pages/diet/ClientDiet';
@@ -16,7 +17,18 @@ import TrainerDiet from './pages/diet/TrainerDiet';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  // Show loading while authentication is being restored
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div>Loading...</div>
+      </Box>
+    );
+  }
+  
+  // Only redirect to login after loading is complete and no user found
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
@@ -69,6 +81,7 @@ const MainLayout: React.FC = () => {
                    <Navigate to="/dashboard" replace />
                  } />
                  <Route path="/body-metrics" element={<BodyMetrics />} />
+                 <Route path="/test-auth" element={<TestAuth />} />
                  <Route path="/settings" element={<Settings />} />
                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
                </Routes>

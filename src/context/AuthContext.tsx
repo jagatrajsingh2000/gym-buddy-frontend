@@ -29,46 +29,49 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Load user profile when token exists
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      if (token) {
+  // Simple function to restore user from localStorage
+  const restoreUserFromStorage = () => {
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    const savedDemoUser = localStorage.getItem('demo_user');
+    
+    console.log('🔄 Restoring from storage:', { 
+      hasToken: !!savedToken, 
+      hasUser: !!savedUser, 
+      hasDemoUser: !!savedDemoUser 
+    });
+    
+    if (savedToken) {
+      if (savedDemoUser && savedToken.startsWith('demo_token_')) {
         try {
-          setLoading(true);
-          
-          // Check if this is a demo user first
-          const demoUser = localStorage.getItem('demo_user');
-          if (demoUser && token.startsWith('demo_token_')) {
-            setUser(JSON.parse(demoUser));
-            setLoading(false);
-            return;
-          }
-          
-          // Otherwise, load from API
-          const response = await authService.getProfile(token);
-          if (response.success) {
-            setUser(response.data);
-          } else {
-            // Token might be expired, remove it
-            localStorage.removeItem('token');
-            localStorage.removeItem('demo_user');
-            setToken(null);
-          }
-        } catch (error) {
-          console.error('Failed to load user profile:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('demo_user');
-          setToken(null);
-        } finally {
-          setLoading(false);
+          const demoUser = JSON.parse(savedDemoUser);
+          setUser(demoUser);
+          console.log('✅ Restored demo user:', demoUser.email);
+        } catch (e) {
+          console.log('❌ Failed to parse demo user');
+        }
+      } else if (savedUser) {
+        try {
+          const regularUser = JSON.parse(savedUser);
+          setUser(regularUser);
+          console.log('✅ Restored regular user:', regularUser.email);
+        } catch (e) {
+          console.log('❌ Failed to parse regular user');
         }
       }
-    };
+    }
+    
+    // Always set loading to false after restoration attempt
+    setLoading(false);
+  };
 
-    loadUserProfile();
-  }, [token]);
+  // Single useEffect that runs once on mount
+  useEffect(() => {
+    console.log('🚀 AuthContext mounted');
+    restoreUserFromStorage();
+  }, []);
 
   // Login function with demo credentials fallback
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -96,6 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(user);
         localStorage.setItem('token', mockToken);
         localStorage.setItem('demo_user', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(user));
         return true;
       }
 
@@ -105,6 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         localStorage.removeItem('demo_user'); // Clear demo data
         return true;
       } else {
@@ -132,6 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('demo_user');
+    localStorage.removeItem('user');
   };
 
   // Register function using real API
@@ -180,6 +186,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return false;
     }
   };
+
+  // Debug logging for authentication state
+  console.log('🔐 AuthContext state:', { user: !!user, token: !!token, loading });
 
   const value: AuthContextType = {
     user,
