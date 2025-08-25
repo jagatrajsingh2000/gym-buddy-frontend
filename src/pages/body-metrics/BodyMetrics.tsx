@@ -4,7 +4,6 @@ import {
   Container,
   Typography,
   Card,
-  CardContent,
   Grid,
   Button,
   TextField,
@@ -18,9 +17,34 @@ import {
   MenuItem,
   Alert,
   CircularProgress,
-  Paper,
   Tabs,
-  Tab
+  Tab,
+  Skeleton,
+  Chip,
+  Tooltip,
+  IconButton,
+  Snackbar,
+  LinearProgress,
+  Fade,
+  Zoom,
+  Slide,
+  Fab,
+  Backdrop,
+  SpeedDial,
+  SpeedDialAction,
+  SpeedDialIcon,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Collapse,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Paper,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -29,7 +53,63 @@ import {
   Flag as Target,
   History,
   Analytics,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Help,
+  TrendingUp,
+  TrendingDown,
+  Info,
+  CheckCircle,
+  Warning,
+  Error,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  Close,
+  Save,
+  Edit,
+  Delete,
+  Visibility,
+  VisibilityOff,
+  Star,
+  StarBorder,
+  Favorite,
+  FavoriteBorder,
+  Share,
+  Download,
+  Print,
+  Settings,
+  Notifications,
+  Search,
+  FilterList,
+  Sort,
+  CalendarToday,
+  AccessTime,
+  LocationOn,
+  Person,
+  Group,
+  EmojiEvents,
+  LocalFireDepartment,
+  WaterDrop,
+  MonitorWeight,
+  Height,
+  Straighten,
+  Speed,
+  Timer,
+  DirectionsRun,
+  DirectionsWalk,
+  DirectionsBike,
+  Pool,
+  SportsSoccer,
+  SportsTennis,
+  SportsBasketball,
+  SportsVolleyball,
+  SportsHandball,
+  SportsRugby,
+  SportsCricket,
+  SportsHockey,
+  SportsKabaddi,
+  SportsMotorsports,
+  SportsEsports,
+  SportsGolf
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -187,6 +267,42 @@ const BodyMetricsPage: React.FC = () => {
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([]);
   const [goals, setGoals] = useState<BodyMetrics[]>([]);
 
+  // Advanced UX States
+  const [showHelp, setShowHelp] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [sortBy, setSortBy] = useState('date');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'chart'>('grid');
+  const [selectedMetrics, setSelectedMetrics] = useState<Set<number>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+
+  // Smart Notifications
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    message: string;
+    action?: string;
+    timestamp: Date;
+    read: boolean;
+  }>>([]);
+
+  // Contextual Help
+  const [helpContext, setHelpContext] = useState<string>('');
+  const [showContextualHelp, setShowContextualHelp] = useState(false);
+
+  // Progress Tracking
+  const [progressData, setProgressData] = useState<{
+    weight: { current: number; target: number; progress: number };
+    bodyFat: { current: number; target: number; progress: number };
+    muscleMass: { current: number; target: number; progress: number };
+  } | null>(null);
+
   // Dialog states
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false); // Legacy compatibility
   const [measurementsDialogOpen, setMeasurementsDialogOpen] = useState(false);
@@ -264,285 +380,151 @@ const BodyMetricsPage: React.FC = () => {
     };
   });
 
+  // Smart UX Utility Functions
+  const addNotification = useCallback((type: 'success' | 'error' | 'warning' | 'info', message: string, action?: string) => {
+    const newNotification = {
+      id: Date.now().toString(),
+      type,
+      message,
+      action,
+      timestamp: new Date(),
+      read: false
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+    
+    // Auto-remove success/error notifications after 5 seconds
+    if (type === 'success' || type === 'error') {
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== newNotification.id));
+      }, 5000);
+    }
+  }, []);
 
+  const markNotificationRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  }, []);
 
+  const showContextualHelpFor = useCallback((context: string) => {
+    setHelpContext(context);
+    setShowContextualHelp(true);
+  }, []);
 
+  const calculateProgress = useCallback(() => {
+    if (!currentMetrics || !goals.length) return null;
+    
+    const goal = goals[0];
+    const weightProgress = goal.targetWeight ? 
+      ((parseFloat(currentMetrics.weight || '0') - parseFloat(goal.targetWeight)) / parseFloat(goal.targetWeight)) * 100 : 0;
+    const bodyFatProgress = goal.targetBodyFat ? 
+      ((parseFloat(currentMetrics.bodyFatPercentage || '0') - parseFloat(goal.targetBodyFat)) / parseFloat(goal.targetBodyFat)) * 100 : 0;
+    
+    setProgressData({
+      weight: { 
+        current: parseFloat(currentMetrics.weight || '0'), 
+        target: parseFloat(goal.targetWeight || '0'), 
+        progress: Math.abs(weightProgress) 
+      },
+      bodyFat: { 
+        current: parseFloat(currentMetrics.bodyFatPercentage || '0'), 
+        target: parseFloat(goal.targetBodyFat || '0'), 
+        progress: Math.abs(bodyFatProgress) 
+      },
+      muscleMass: { 
+        current: parseFloat(currentMetrics.muscleMass || '0'), 
+        target: parseFloat(goal.targetMuscleMass || '0'), 
+        progress: 0 
+      }
+    });
+  }, [currentMetrics, goals]);
 
-
-
-
+  const getInsightMessage = useCallback(() => {
+    if (!progressData) return null;
+    
+    const { weight, bodyFat } = progressData;
+    if (weight.progress > 80) return "🎯 Great progress on weight goal! Keep it up!";
+    if (bodyFat.progress > 80) return "💪 Excellent body fat progress! You're crushing it!";
+    if (weight.progress > 50) return "👍 Good progress! You're on the right track.";
+    return "🚀 Keep pushing! Every measurement brings you closer to your goals.";
+  }, [progressData]);
 
   const fetchAllData = useCallback(async () => {
-    console.log('🔍 fetchAllData called with:', {
-      hasToken: !!token,
-      hasUser: !!authUser,
-      currentLoading: loading,
-      tokenType: token ? (token.startsWith('demo_token_') ? 'demo' : 'regular') : 'none'
-    });
-
-    if (!token) {
-      console.log('❌ No token available for data fetch');
-      return;
-    }
-
-    if (loading) {
-      console.log('⏳ Already loading data, skipping duplicate request');
-      return;
-    }
-
-    console.log('🔄 Starting data fetch...');
-    console.log('Token:', token ? `${token.substring(0, 20)}...` : 'No token');
-    console.log('User:', authUser);
-    console.log('Current loading state:', loading);
-
+    if (!token) return;
+    
+    setLoading(true);
+    setSyncStatus('syncing');
+    
     try {
-      setLoading(true);
-      setError(null);
-
-      // Check if using demo token (fallback to demo data)
-      if (token.startsWith('demo_token_')) {
-        // Use demo data - convert from existing progress data
-        const demoData = createDemoBodyMetrics(authUser?.email || 'client@gymbuddy.com');
-        console.log('🎭 Demo data created:', demoData);
-        console.log('📊 Demo weight history count:', demoData.weightHistory?.length);
-        setCurrentMetrics(demoData.currentMetrics);
-        setMetricsHistory(demoData.history || []);
-        setWeightHistory(demoData.weightHistory || []);
-        setGoals(demoData.goals || []);
-      } else {
-        // Fetch from real API with new separated structure
-        try {
-          // Fetch current metrics (legacy)
-          const currentResponse = await bodyMetricsService.getCurrentMetrics(token);
-          console.log('🔍 Current metrics response:', currentResponse);
-          if (currentResponse.success && currentResponse.data) {
-            // API returns data.metrics, not data directly
-            const metricsData = (currentResponse.data as any).metrics || currentResponse.data;
-            console.log('✅ Setting current metrics:', metricsData);
-            setCurrentMetrics(metricsData);
-          } else {
-            console.log('❌ No current metrics data:', currentResponse);
-            setCurrentMetrics(null);
+      // Show progress indicator
+      setShowProgress(true);
+      
+      // Fetch all data with progress updates
+      const promises = [
+        bodyMetricsService.getCurrentMetrics(token).then(response => {
+          if (response.success && response.data) {
+            setCurrentMetrics(response.data);
           }
-
-          // Fetch current measurements (new API)
-          try {
-            const measurementsResponse = await bodyMeasurementsService.getCurrentMeasurements(token);
-            if (measurementsResponse.success && measurementsResponse.data) {
-              const measurementsData = (measurementsResponse.data as any).metrics || measurementsResponse.data;
-              console.log('✅ Setting current measurements:', measurementsData);
-              setCurrentMeasurements(measurementsData);
-            }
-          } catch (error) {
-            console.log('⚠️ New measurements API not available, extracting from legacy data');
-            // Extract measurements data from currentMetrics for fallback
-            const legacyMetrics = (currentResponse.success && currentResponse.data) ? 
-              ((currentResponse.data as any).metrics || currentResponse.data) : null;
-            
-            if (legacyMetrics) {
-              const extractedMeasurements: BodyMeasurements = {
-                id: legacyMetrics.id,
-                userId: legacyMetrics.userId,
-                chest: legacyMetrics.chest ? parseFloat(legacyMetrics.chest) : null,
-                waist: legacyMetrics.waist ? parseFloat(legacyMetrics.waist) : null,
-                hips: legacyMetrics.hips ? parseFloat(legacyMetrics.hips) : null,
-                biceps: legacyMetrics.biceps ? parseFloat(legacyMetrics.biceps) : null,
-                forearms: legacyMetrics.forearms ? parseFloat(legacyMetrics.forearms) : null,
-                thighs: legacyMetrics.thighs ? parseFloat(legacyMetrics.thighs) : null,
-                calves: legacyMetrics.calves ? parseFloat(legacyMetrics.calves) : null,
-                neck: legacyMetrics.neck ? parseFloat(legacyMetrics.neck) : null,
-                measurementDate: legacyMetrics.measurementDate,
-                notes: legacyMetrics.notes,
-                isGoal: legacyMetrics.isGoal,
-                created_at: legacyMetrics.created_at,
-                updated_at: legacyMetrics.updated_at
-              };
-              console.log('✅ Extracted measurements from legacy data:', extractedMeasurements);
-              setCurrentMeasurements(extractedMeasurements);
-            }
+          return 'currentMetrics';
+        }),
+        bodyMetricsService.getMetricsHistory(token, { limit: 10 }).then(response => {
+          if (response.success && response.data) {
+            const historyData = response.data.metrics || response.data.items || [];
+            setMetricsHistory(historyData);
           }
-
-          // Fetch current composition (new API)
-          try {
-            const compositionResponse = await bodyCompositionService.getCurrentComposition(token);
-            if (compositionResponse.success && compositionResponse.data) {
-              const compositionData = (compositionResponse.data as any).composition || compositionResponse.data;
-              console.log('✅ Setting current composition:', compositionData);
-              setCurrentComposition(compositionData);
-            }
-          } catch (error) {
-            console.log('⚠️ New composition API not available, extracting from legacy data');
-            // Extract composition data from currentMetrics for fallback
-            const legacyMetrics = (currentResponse.success && currentResponse.data) ? 
-              ((currentResponse.data as any).metrics || currentResponse.data) : null;
-            
-            if (legacyMetrics) {
-              const extractedComposition: BodyComposition = {
-                id: legacyMetrics.id,
-                userId: legacyMetrics.userId,
-                bodyFatPercentage: legacyMetrics.bodyFatPercentage ? parseFloat(legacyMetrics.bodyFatPercentage) : null,
-                muscleMass: legacyMetrics.muscleMass ? parseFloat(legacyMetrics.muscleMass) : null,
-                boneMass: legacyMetrics.boneMass ? parseFloat(legacyMetrics.boneMass) : null,
-                waterPercentage: legacyMetrics.waterPercentage ? parseFloat(legacyMetrics.waterPercentage) : null,
-                measurementDate: legacyMetrics.measurementDate,
-                notes: legacyMetrics.notes,
-                isGoal: legacyMetrics.isGoal,
-                created_at: legacyMetrics.created_at,
-                updated_at: legacyMetrics.updated_at
-              };
-              console.log('✅ Extracted composition from legacy data:', extractedComposition);
-              setCurrentComposition(extractedComposition);
-            }
+          return 'history';
+        }),
+        bodyMetricsService.getGoals(token).then(response => {
+          if (response.success && response.data) {
+            setGoals(response.data);
           }
-
-          // Fetch metrics history and separate into measurements and composition
-          const historyResponse = await bodyMetricsService.getMetricsHistory(token, { limit: 10 });
-          if (historyResponse.success && historyResponse.data) {
-            console.log('History response:', historyResponse.data);
-            // API returns data.metrics, not data.items
-            const historyData = historyResponse.data.metrics || historyResponse.data.items || [];
-            console.log('Setting metrics history:', historyData);
-            setMetricsHistory(historyData || []);
-
-            // Separate history data for the new UI tabs
-            const measurementsData: BodyMeasurements[] = [];
-            const compositionData: BodyComposition[] = [];
-
-            historyData.forEach((item: any) => {
-              // Check if this item has measurement data (circumference)
-              if (item.chest || item.waist || item.hips || item.biceps || item.forearms || item.thighs || item.calves || item.neck) {
-                measurementsData.push({
-                  id: item.id,
-                  userId: item.userId,
-                  chest: item.chest ? parseFloat(item.chest) : null,
-                  waist: item.waist ? parseFloat(item.waist) : null,
-                  hips: item.hips ? parseFloat(item.hips) : null,
-                  biceps: item.biceps ? parseFloat(item.biceps) : null,
-                  forearms: item.forearms ? parseFloat(item.forearms) : null,
-                  thighs: item.thighs ? parseFloat(item.thighs) : null,
-                  calves: item.calves ? parseFloat(item.calves) : null,
-                  neck: item.neck ? parseFloat(item.neck) : null,
-                  measurementDate: item.measurementDate,
-                  notes: item.notes,
-                  isGoal: item.isGoal,
-                  created_at: item.created_at,
-                  updated_at: item.updated_at
-                });
-              }
-
-              // Check if this item has composition data
-              if (item.bodyFatPercentage || item.muscleMass || item.boneMass || item.waterPercentage) {
-                compositionData.push({
-                  id: item.id,
-                  userId: item.userId,
-                  bodyFatPercentage: item.bodyFatPercentage ? parseFloat(item.bodyFatPercentage) : null,
-                  muscleMass: item.muscleMass ? parseFloat(item.muscleMass) : null,
-                  boneMass: item.boneMass ? parseFloat(item.boneMass) : null,
-                  waterPercentage: item.waterPercentage ? parseFloat(item.waterPercentage) : null,
-                  measurementDate: item.measurementDate,
-                  notes: item.notes,
-                  isGoal: item.isGoal,
-                  created_at: item.created_at,
-                  updated_at: item.updated_at
-                });
-              }
-            });
-
-            console.log('✅ Separated measurements history:', measurementsData);
-            console.log('✅ Separated composition history:', compositionData);
-            setMeasurementsHistory(measurementsData);
-            setCompositionHistory(compositionData);
-          } else {
-            setMetricsHistory([]);
-            setMeasurementsHistory([]);
-            setCompositionHistory([]);
+          return 'goals';
+        }),
+        bodyMetricsService.getWeightHistory(token, { limit: 10 }).then(response => {
+          if (response.success && response.data) {
+            const weightData = response.data.weightHistory || response.data.items || [];
+            setWeightHistory(weightData);
           }
+          return 'weightHistory';
+        })
+      ];
 
-          // Fetch weight history
-          const weightResponse = await bodyMetricsService.getWeightHistory(token, { limit: 20 });
-          console.log('⚖️ Weight history response:', weightResponse);
-          if (weightResponse.success && weightResponse.data) {
-            console.log('Weight history response data:', weightResponse.data);
-            // API returns data.weightHistory according to documentation
-            const weightData = weightResponse.data.weightHistory || [];
-            console.log('✅ Setting weight history:', weightData);
-            console.log('📊 Weight history count:', weightData.length);
-            setWeightHistory(weightData || []);
-            
-            // Get the most recent weight entry for current metrics display
-            if (weightData.length > 0) {
-              const mostRecentWeight = weightData[0]; // Assuming API returns sorted by date desc
-              console.log('🎯 Most recent weight entry:', mostRecentWeight);
-              
-              // Update current metrics with the most recent weight if we have it
-              if (currentMetrics) {
-                const updatedMetrics = {
-                  ...currentMetrics,
-                  weight: mostRecentWeight.weight,
-                  weightUnit: mostRecentWeight.weightUnit,
-                  height: mostRecentWeight.height || currentMetrics.height,
-                  heightUnit: mostRecentWeight.heightUnit || currentMetrics.heightUnit,
-                  bmi: mostRecentWeight.bmi || currentMetrics.bmi,
-                  measurementDate: mostRecentWeight.measurementDate
-                };
-                console.log('🔄 Updating current metrics with recent weight data:', updatedMetrics);
-                setCurrentMetrics(updatedMetrics);
-              }
+      // Track progress
+      let completed = 0;
+      const results = await Promise.allSettled(
+        promises.map(promise => 
+          promise.then(result => {
+            completed++;
+            // Update progress indicator
+            if (completed === promises.length) {
+              setShowProgress(false);
+              setSyncStatus('success');
+              setLastSync(new Date());
+              addNotification('success', 'Data refreshed successfully! 🎉');
             }
-          } else {
-            console.log('❌ No weight history data:', weightResponse);
-            setWeightHistory([]);
-          }
+            return result;
+          })
+        )
+      );
 
-          // Fetch goals
-          const goalsResponse = await bodyMetricsService.getGoals(token);
-          console.log('🎯 Goals response:', goalsResponse);
-          if (goalsResponse.success && goalsResponse.data) {
-            console.log('✅ Setting goals:', goalsResponse.data);
-            // API returns data.goals as an array
-            let goalsData;
-            if (Array.isArray(goalsResponse.data)) {
-              // Direct array
-              goalsData = goalsResponse.data;
-            } else if ((goalsResponse.data as any).goals) {
-              // Array wrapped in goals property
-              goalsData = (goalsResponse.data as any).goals;
-            } else if ((goalsResponse.data as any).items) {
-              // Array wrapped in items property
-              goalsData = (goalsResponse.data as any).items;
-            } else if ((goalsResponse.data as any).metrics) {
-              // Single goal item wrapped in metrics
-              goalsData = [(goalsResponse.data as any).metrics];
-            } else {
-              // Fallback to empty array
-              goalsData = [];
-            }
-            console.log('📊 Processed goals data:', goalsData);
-            console.log('📊 Goals count:', goalsData.length);
-            setGoals(goalsData);
-          } else {
-            console.log('❌ No goals data:', goalsResponse);
-            setGoals([]);
-          }
-        } catch (apiError) {
-          console.log('API not available, using demo data');
-          console.error('API Error details:', apiError);
-          // Fallback to demo data if API fails
-          const demoData = createDemoBodyMetrics(authUser?.email || 'client@gymbuddy.com');
-          setCurrentMetrics(demoData.currentMetrics);
-          setMetricsHistory(demoData.history || []);
-          setWeightHistory(demoData.weightHistory || []);
-          setGoals(demoData.goals || []);
+      // Handle individual results
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(`Failed to fetch ${['currentMetrics', 'history', 'goals', 'weightHistory'][index]}:`, result.reason);
         }
-      }
+      });
 
-    } catch (err) {
-      console.error('Failed to fetch body metrics data:', err);
-      setError('Failed to load body metrics data. Please try again.');
+      // Calculate progress after data is loaded
+      calculateProgress();
+      
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch data. Please try again.');
+      setSyncStatus('error');
+      addNotification('error', 'Failed to fetch data. Please check your connection.');
     } finally {
       setLoading(false);
+      setShowProgress(false);
     }
-  }, [token, authUser]);
+  }, [token, addNotification, calculateProgress]);
 
   // Single useEffect to fetch data when component mounts and auth is ready
   useEffect(() => {
@@ -556,11 +538,15 @@ const BodyMetricsPage: React.FC = () => {
       console.log('✅ All conditions met, fetching data...');
       fetchAllData();
     }
-  }, [token, authUser, authLoading]);
+  }, [token, authUser, authLoading, fetchAllData]);
 
   // Handle tab change
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    // Remove focus from the tab to prevent the blue outline
+    if (event.target instanceof HTMLElement) {
+      event.target.blur();
+    }
   };
 
   // Dialog handlers
@@ -1017,8 +1003,83 @@ const BodyMetricsPage: React.FC = () => {
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       py: 4
     }}>
+      {/* Smart Progress Indicator */}
+      {showProgress && (
+        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999 }}>
+          <LinearProgress 
+            sx={{ 
+              height: 4,
+              background: 'linear-gradient(90deg, #e94560 0%, #ff9f43 100%)',
+              '& .MuiLinearProgress-bar': {
+                background: 'linear-gradient(90deg, #00d4aa 0%, #3742fa 100%)'
+              }
+            }} 
+          />
+        </Box>
+      )}
+
+      {/* Smart Notifications */}
+      <Snackbar
+        open={notifications.length > 0}
+        autoHideDuration={6000}
+        onClose={() => setNotifications([])}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        sx={{ zIndex: 9998 }}
+      >
+        <Box>
+          {notifications.slice(0, 3).map((notification) => (
+            <Alert
+              key={notification.id}
+              severity={notification.type}
+              onClose={() => markNotificationRead(notification.id)}
+              sx={{
+                mb: 1,
+                borderRadius: 3,
+                boxShadow: '0px 8px 25px rgba(0, 0, 0, 0.15)',
+                '& .MuiAlert-icon': {
+                  fontSize: '1.5rem'
+                }
+              }}
+            >
+              {notification.message}
+            </Alert>
+          ))}
+        </Box>
+      </Snackbar>
+
+      {/* Contextual Help Backdrop */}
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: 9997,
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(10px)'
+        }}
+        open={showContextualHelp}
+        onClick={() => setShowContextualHelp(false)}
+      >
+        <Box sx={{ 
+          textAlign: 'center', 
+          p: 4,
+          maxWidth: 500,
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+          borderRadius: 4,
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}>
+          <Typography variant="h5" sx={{ mb: 2, color: 'white' }}>
+            💡 {helpContext}
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+            {helpContext === 'measurements' && 'Track your body circumference measurements to monitor muscle growth and body composition changes.'}
+            {helpContext === 'composition' && 'Monitor your body fat percentage, muscle mass, and water content for better fitness insights.'}
+            {helpContext === 'weight' && 'Log your weight regularly to track progress and identify patterns in your fitness journey.'}
+            {helpContext === 'goals' && 'Set realistic fitness goals and track your progress towards achieving them.'}
+          </Typography>
+        </Box>
+      </Backdrop>
+
       <Container maxWidth="xl">
-        {/* Hero Header Section */}
+        {/* Hero Header Section with Enhanced UX */}
         <Box sx={{ 
           mb: 6,
           textAlign: 'center',
@@ -1063,7 +1124,7 @@ const BodyMetricsPage: React.FC = () => {
             Transform your fitness journey with precision tracking and beautiful insights
           </Typography>
 
-          {/* Action Buttons */}
+          {/* Smart Action Buttons with Contextual Help */}
           <Box sx={{ 
             display: 'flex', 
             gap: 2, 
@@ -1072,71 +1133,95 @@ const BodyMetricsPage: React.FC = () => {
             position: 'relative',
             zIndex: 1
           }}>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<AddIcon />}
-              onClick={handleOpenMetricsDialog}
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontSize: '1rem',
-                background: 'linear-gradient(135deg, #e94560 0%, #ff9f43 100%)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #d63384 0%, #e94560 100%)',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0px 8px 25px rgba(233, 69, 96, 0.3)'
-                }
-              }}
-            >
-              Record Metrics
-            </Button>
+            <Tooltip title="Record comprehensive body metrics including measurements and composition" arrow>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<AddIcon />}
+                onClick={handleOpenMetricsDialog}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1rem',
+                  background: 'linear-gradient(135deg, #e94560 0%, #ff9f43 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #d63384 0%, #e94560 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0px 8px 25px rgba(233, 69, 96, 0.3)'
+                  }
+                }}
+              >
+                Record Metrics
+              </Button>
+            </Tooltip>
             
-            <Button
-              variant="outlined"
-              size="large"
-              startIcon={<Scale />}
-              onClick={handleOpenWeightDialog}
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontSize: '1rem',
-                borderColor: '#1a1a2e',
-                color: '#1a1a2e',
-                borderWidth: '2px',
-                '&:hover': {
-                  borderColor: '#e94560',
-                  color: '#e94560',
-                  backgroundColor: 'rgba(233, 69, 96, 0.05)',
-                  transform: 'translateY(-2px)'
-                }
-              }}
-            >
-              Log Weight
-            </Button>
+            <Tooltip title="Log your daily weight and track your progress over time" arrow>
+              <Button
+                variant="outlined"
+                size="large"
+                startIcon={<Scale />}
+                onClick={handleOpenWeightDialog}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1rem',
+                  borderColor: '#1a1a2e',
+                  color: '#1a1a2e',
+                  borderWidth: '2px',
+                  '&:hover': {
+                    borderColor: '#e94560',
+                    color: '#e94560',
+                    backgroundColor: 'rgba(233, 69, 96, 0.05)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                Log Weight
+              </Button>
+            </Tooltip>
             
-            <Button
-              variant="outlined"
-              size="large"
-              startIcon={<Target />}
-              onClick={handleOpenGoalDialog}
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontSize: '1rem',
-                borderColor: '#00d4aa',
-                color: '#00d4aa',
-                borderWidth: '2px',
-                '&:hover': {
-                  borderColor: '#00b894',
-                  color: '#00b894',
-                  backgroundColor: 'rgba(0, 212, 170, 0.05)',
-                  transform: 'translateY(-2px)'
-                }
-              }}
-            >
-              Set Goal
-            </Button>
+            <Tooltip title="Set fitness goals and track your progress towards achieving them" arrow>
+              <Button
+                variant="outlined"
+                size="large"
+                startIcon={<Target />}
+                onClick={handleOpenGoalDialog}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1rem',
+                  borderColor: '#00d4aa',
+                  color: '#00d4aa',
+                  borderWidth: '2px',
+                  '&:hover': {
+                    borderColor: '#00b894',
+                    color: '#00b894',
+                    backgroundColor: 'rgba(0, 212, 170, 0.05)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                Set Goal
+              </Button>
+            </Tooltip>
+
+            {/* Smart Help Button */}
+            <Tooltip title="Get contextual help for this page" arrow>
+              <IconButton
+                onClick={() => setShowHelp(true)}
+                sx={{
+                  p: 1.5,
+                  border: '2px solid #3742fa',
+                  color: '#3742fa',
+                  '&:hover': {
+                    backgroundColor: 'rgba(55, 66, 250, 0.1)',
+                    transform: 'scale(1.1)'
+                  }
+                }}
+              >
+                <Help />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
 
@@ -1343,6 +1428,221 @@ const BodyMetricsPage: React.FC = () => {
           </Box>
         )}
 
+        {/* Smart Progress Insights Section */}
+        {progressData && (
+          <Fade in={!!progressData} timeout={1000}>
+            <Card sx={{ 
+              mb: 4, 
+              background: 'linear-gradient(135deg, #00d4aa 0%, #00b894 100%)',
+              color: 'white',
+              overflow: 'visible'
+            }}>
+              <Box sx={{ p: 3, position: 'relative' }}>
+                {/* Decorative Elements */}
+                <Box sx={{
+                  position: 'absolute',
+                  top: -20,
+                  right: -20,
+                  width: 80,
+                  height: 80,
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50%'
+                }} />
+                
+                <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
+                  🎯 Progress Insights
+                </Typography>
+                
+                <Typography variant="body1" sx={{ mb: 3, opacity: 0.9 }}>
+                  {getInsightMessage()}
+                </Typography>
+                
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={4}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                        {progressData.weight.progress.toFixed(1)}%
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        Weight Goal Progress
+                      </Typography>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={Math.min(progressData.weight.progress, 100)}
+                        sx={{ 
+                          mt: 1, 
+                          height: 8, 
+                          borderRadius: 4,
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                          '& .MuiLinearProgress-bar': {
+                            background: 'linear-gradient(90deg, #ffffff 0%, #f0f0f0 100%)'
+                          }
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={4}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                        {progressData.bodyFat.progress.toFixed(1)}%
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        Body Fat Goal Progress
+                      </Typography>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={Math.min(progressData.bodyFat.progress, 100)}
+                        sx={{ 
+                          mt: 1, 
+                          height: 8, 
+                          borderRadius: 4,
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                          '& .MuiLinearProgress-bar': {
+                            background: 'linear-gradient(90deg, #ffffff 0%, #f0f0f0 100%)'
+                          }
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={4}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                        {progressData.muscleMass.progress.toFixed(1)}%
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        Muscle Mass Goal Progress
+                      </Typography>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={Math.min(progressData.muscleMass.progress, 100)}
+                        sx={{ 
+                          mt: 1, 
+                          height: 8, 
+                          borderRadius: 4,
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                          '& .MuiLinearProgress-bar': {
+                            background: 'linear-gradient(90deg, #ffffff 0%, #f0f0f0 100%)'
+                          }
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            </Card>
+          </Fade>
+        )}
+
+        {/* Enhanced Search and Filter Section */}
+        <Box sx={{ mb: 4 }}>
+          <Card sx={{ 
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid rgba(0, 0, 0, 0.1)'
+          }}>
+            <Box sx={{ p: 3 }}>
+              <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    placeholder="Search metrics, notes, or dates..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                      startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                      sx: { borderRadius: 3 }
+                    }}
+                    size="small"
+                  />
+                </Grid>
+                
+                <Grid item xs={12} md={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Filter Type</InputLabel>
+                    <Select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      label="Filter Type"
+                      sx={{ borderRadius: 3 }}
+                    >
+                      <MenuItem value="all">All Metrics</MenuItem>
+                      <MenuItem value="measurements">Measurements</MenuItem>
+                      <MenuItem value="composition">Composition</MenuItem>
+                      <MenuItem value="weight">Weight</MenuItem>
+                      <MenuItem value="goals">Goals</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid item xs={12} md={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Sort By</InputLabel>
+                    <Select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      label="Sort By"
+                      sx={{ borderRadius: 3 }}
+                    >
+                      <MenuItem value="date">Date (Newest)</MenuItem>
+                      <MenuItem value="date_old">Date (Oldest)</MenuItem>
+                      <MenuItem value="weight">Weight</MenuItem>
+                      <MenuItem value="bodyFat">Body Fat %</MenuItem>
+                      <MenuItem value="muscleMass">Muscle Mass</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid item xs={12} md={2}>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="Grid View" arrow>
+                      <IconButton
+                        onClick={() => setViewMode('grid')}
+                        color={viewMode === 'grid' ? 'primary' : 'default'}
+                        sx={{ 
+                          borderRadius: 2,
+                          backgroundColor: viewMode === 'grid' ? 'primary.main' : 'transparent',
+                          color: viewMode === 'grid' ? 'white' : 'text.secondary'
+                        }}
+                      >
+                        <Grid />
+                      </IconButton>
+                    </Tooltip>
+                    
+                    <Tooltip title="List View" arrow>
+                      <IconButton
+                        onClick={() => setViewMode('list')}
+                        color={viewMode === 'list' ? 'primary' : 'default'}
+                        sx={{ 
+                          borderRadius: 2,
+                          backgroundColor: viewMode === 'list' ? 'primary.main' : 'transparent',
+                          color: viewMode === 'list' ? 'white' : 'text.secondary'
+                        }}
+                      >
+                        <List />
+                      </IconButton>
+                    </Tooltip>
+                    
+                    <Tooltip title="Chart View" arrow>
+                      <IconButton
+                        onClick={() => setViewMode('chart')}
+                        color={viewMode === 'chart' ? 'primary' : 'default'}
+                        sx={{ 
+                          borderRadius: 2,
+                          backgroundColor: viewMode === 'chart' ? 'primary.main' : 'transparent',
+                          color: viewMode === 'chart' ? 'white' : 'text.secondary'
+                        }}
+                      >
+                        <Analytics />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
+          </Card>
+        </Box>
+
         {/* Enhanced Tabbed Interface */}
         <Card sx={{ 
           borderRadius: 4,
@@ -1362,6 +1662,21 @@ const BodyMetricsPage: React.FC = () => {
                   height: 4,
                   borderRadius: 2,
                   background: 'linear-gradient(90deg, #e94560 0%, #ff9f43 100%)'
+                },
+                '& .MuiTab-root': {
+                  minHeight: 64,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  transition: 'all 0.3s ease',
+                  '&:focus': {
+                    outline: 'none',
+                    boxShadow: 'none'
+                  },
+                  '&:focus-visible': {
+                    outline: 'none',
+                    boxShadow: 'none'
+                  }
                 }
               }}
             >
@@ -1372,9 +1687,18 @@ const BodyMetricsPage: React.FC = () => {
                 sx={{
                   color: 'white',
                   opacity: 0.8,
+                  transition: 'all 0.3s ease',
                   '&.Mui-selected': {
                     color: 'white',
                     opacity: 1
+                  },
+                  '&:focus': {
+                    outline: 'none',
+                    boxShadow: 'none'
+                  },
+                  '&:focus-visible': {
+                    outline: 'none',
+                    boxShadow: 'none'
                   }
                 }}
               />
@@ -1385,9 +1709,18 @@ const BodyMetricsPage: React.FC = () => {
                 sx={{
                   color: 'white',
                   opacity: 0.8,
+                  transition: 'all 0.3s ease',
                   '&.Mui-selected': {
                     color: 'white',
                     opacity: 1
+                  },
+                  '&:focus': {
+                    outline: 'none',
+                    boxShadow: 'none'
+                  },
+                  '&:focus-visible': {
+                    outline: 'none',
+                    boxShadow: 'none'
                   }
                 }}
               />
@@ -1398,9 +1731,18 @@ const BodyMetricsPage: React.FC = () => {
                 sx={{
                   color: 'white',
                   opacity: 0.8,
+                  transition: 'all 0.3s ease',
                   '&.Mui-selected': {
                     color: 'white',
                     opacity: 1
+                  },
+                  '&:focus': {
+                    outline: 'none',
+                    boxShadow: 'none'
+                  },
+                  '&:focus-visible': {
+                    outline: 'none',
+                    boxShadow: 'none'
                   }
                 }}
               />
@@ -1411,9 +1753,18 @@ const BodyMetricsPage: React.FC = () => {
                 sx={{
                   color: 'white',
                   opacity: 0.8,
+                  transition: 'all 0.3s ease',
                   '&.Mui-selected': {
                     color: 'white',
                     opacity: 1
+                  },
+                  '&:focus': {
+                    outline: 'none',
+                    boxShadow: 'none'
+                  },
+                  '&:focus-visible': {
+                    outline: 'none',
+                    boxShadow: 'none'
                   }
                 }}
               />
@@ -1424,9 +1775,18 @@ const BodyMetricsPage: React.FC = () => {
                 sx={{
                   color: 'white',
                   opacity: 0.8,
+                  transition: 'all 0.3s ease',
                   '&.Mui-selected': {
                     color: 'white',
                     opacity: 1
+                  },
+                  '&:focus': {
+                    outline: 'none',
+                    boxShadow: 'none'
+                  },
+                  '&:focus-visible': {
+                    outline: 'none',
+                    boxShadow: 'none'
                   }
                 }}
               />
@@ -1437,92 +1797,184 @@ const BodyMetricsPage: React.FC = () => {
           <Box sx={{ p: 4, background: 'white' }}>
             {/* Tab 0: Body Measurements (Circumference) */}
             <TabPanel value={tabValue} index={0}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6">Body Measurements (Circumference)</Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => setMeasurementsDialogOpen(true)}
-                  sx={{ ml: 2 }}
-                >
-                  Record Measurements
-                </Button>
-              </Box>
-
-              {/* Current Measurements Display */}
-              {currentMeasurements || currentMetrics ? (
-                <Card sx={{ mb: 3, p: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2 }}>Current Measurements</Typography>
-                  <Grid container spacing={3}>
-                    {[
-                      { label: 'Chest', value: (currentMeasurements?.chest || currentMetrics?.chest), unit: 'cm' },
-                      { label: 'Waist', value: (currentMeasurements?.waist || currentMetrics?.waist), unit: 'cm' },
-                      { label: 'Hips', value: (currentMeasurements?.hips || currentMetrics?.hips), unit: 'cm' },
-                      { label: 'Biceps', value: (currentMeasurements?.biceps || currentMetrics?.biceps), unit: 'cm' },
-                      { label: 'Forearms', value: (currentMeasurements?.forearms || currentMetrics?.forearms), unit: 'cm' },
-                      { label: 'Thighs', value: (currentMeasurements?.thighs || currentMetrics?.thighs), unit: 'cm' },
-                      { label: 'Calves', value: (currentMeasurements?.calves || currentMetrics?.calves), unit: 'cm' },
-                      { label: 'Neck', value: (currentMeasurements?.neck || currentMetrics?.neck), unit: 'cm' }
-                    ].map((measurement) => (
-                      <Grid item xs={12} sm={6} md={3} key={measurement.label}>
-                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-                          <Typography variant="h6" color="primary.main">
-                            {measurement.value || 'N/A'} {measurement.value ? measurement.unit : ''}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {measurement.label}
+              <Grid container spacing={3}>
+                {/* Current Measurements Display */}
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ 
+                    background: 'linear-gradient(135deg, #3742fa 0%, #5c6bc0 100%)',
+                    color: 'white',
+                    height: '100%'
+                  }}>
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                        📏 Current Measurements
+                      </Typography>
+                      {currentMeasurements ? (
+                        <Box>
+                          <Grid container spacing={2}>
+                            <Grid item xs={6}>
+                              <Box sx={{ textAlign: 'center', p: 2 }}>
+                                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                                  {currentMeasurements.chest || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                                  Chest (cm)
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid item xs={6}>
+                              <Box sx={{ textAlign: 'center', p: 2 }}>
+                                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                                  {currentMeasurements.waist || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                                  Waist (cm)
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid item xs={6}>
+                              <Box sx={{ textAlign: 'center', p: 2 }}>
+                                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                                  {currentMeasurements.hips || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                                  Hips (cm)
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid item xs={6}>
+                              <Box sx={{ textAlign: 'center', p: 2 }}>
+                                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                                  {currentMeasurements.biceps || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                                  Biceps (cm)
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          </Grid>
+                          <Typography variant="caption" sx={{ opacity: 0.7, display: 'block', mt: 2 }}>
+                            Last updated: {new Date(currentMeasurements.measurementDate).toLocaleDateString()}
                           </Typography>
                         </Box>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Card>
-              ) : (
-                <Alert severity="info" sx={{ mb: 3 }}>
-                  No body measurements recorded yet. Click "Record Measurements" to start tracking your circumference measurements.
-                </Alert>
-              )}
+                      ) : (
+                        <Typography variant="body1" sx={{ opacity: 0.8 }}>
+                          No measurements recorded yet
+                        </Typography>
+                      )}
+                    </Box>
+                  </Card>
+                </Grid>
 
-              {/* Measurements History */}
-              <Typography variant="h6" sx={{ mb: 2 }}>Measurements History</Typography>
-              {Array.isArray(measurementsHistory) && measurementsHistory.length > 0 ? (
-                <Box>
-                  {measurementsHistory.map((measurement, index) => (
-                    <Card key={measurement.id || index} sx={{ mb: 2, p: 2 }}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6} md={2}>
-                          <Typography variant="body2" color="text.secondary">Date</Typography>
-                          <Typography variant="body1">{measurement.measurementDate}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
-                          <Typography variant="body2" color="text.secondary">Chest</Typography>
-                          <Typography variant="body1">{measurement.chest || 'N/A'} cm</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
-                          <Typography variant="body2" color="text.secondary">Waist</Typography>
-                          <Typography variant="body1">{measurement.waist || 'N/A'} cm</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
-                          <Typography variant="body2" color="text.secondary">Hips</Typography>
-                          <Typography variant="body1">{measurement.hips || 'N/A'} cm</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
-                          <Typography variant="body2" color="text.secondary">Biceps</Typography>
-                          <Typography variant="body1">{measurement.biceps || 'N/A'} cm</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
-                          <Typography variant="body2" color="text.secondary">Thighs</Typography>
-                          <Typography variant="body1">{measurement.thighs || 'N/A'} cm</Typography>
-                        </Grid>
-                      </Grid>
-                    </Card>
-                  ))}
-                </Box>
-              ) : (
-                <Typography variant="body1" color="text.secondary">
-                  No measurements history available yet. Start recording your body measurements to see your progress here.
-                </Typography>
-              )}
+                {/* Action Card */}
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ 
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                    border: '1px solid rgba(0, 0, 0, 0.1)',
+                    height: '100%'
+                  }}>
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
+                        📐 Record New Measurements
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+                        Track your body circumference measurements to monitor muscle growth and body composition changes.
+                      </Typography>
+                      
+                      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <Button
+                          variant="contained"
+                          startIcon={<AddIcon />}
+                          onClick={handleOpenMetricsDialog}
+                          sx={{
+                            px: 3,
+                            py: 1.5,
+                            background: 'linear-gradient(135deg, #3742fa 0%, #5c6bc0 100%)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #5c6bc0 0%, #3f51b5 100%)',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0px 8px 25px rgba(55, 66, 250, 0.3)'
+                            }
+                          }}
+                        >
+                          Record Measurements
+                        </Button>
+                        
+                        <Tooltip title="Learn more about body measurements" arrow>
+                          <IconButton
+                            onClick={() => showContextualHelpFor('measurements')}
+                            sx={{
+                              border: '2px solid #3742fa',
+                              color: '#3742fa',
+                              '&:hover': {
+                                backgroundColor: 'rgba(55, 66, 250, 0.1)',
+                                transform: 'scale(1.1)'
+                              }
+                            }}
+                          >
+                            <Help />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                  </Card>
+                </Grid>
+
+                {/* History Section */}
+                <Grid item xs={12}>
+                  <Card sx={{ 
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                    border: '1px solid rgba(0, 0, 0, 0.1)'
+                  }}>
+                    <Box sx={{ p: 3 }}>
+                      <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: 'text.primary' }}>
+                        📊 Measurement History
+                      </Typography>
+                      
+                      {measurementsHistory.length > 0 ? (
+                        <Box sx={{ overflowX: 'auto' }}>
+                          <Grid container spacing={2}>
+                            {measurementsHistory.slice(0, 5).map((measurement, index) => (
+                              <Grid item xs={12} sm={6} md={4} key={measurement.id}>
+                                <Card sx={{ 
+                                  p: 2,
+                                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                  border: '1px solid rgba(0, 0, 0, 0.05)',
+                                  transition: 'all 0.3s ease',
+                                  '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0px 8px 25px rgba(0, 0, 0, 0.1)'
+                                  }
+                                }}>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                                    {new Date(measurement.measurementDate).toLocaleDateString()}
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                    <Typography variant="body2" color="text.secondary">Chest:</Typography>
+                                    <Typography variant="body2" fontWeight={600}>{measurement.chest || 'N/A'} cm</Typography>
+                                  </Box>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                    <Typography variant="body2" color="text.secondary">Waist:</Typography>
+                                    <Typography variant="body2" fontWeight={600}>{measurement.waist || 'N/A'} cm</Typography>
+                                  </Box>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" color="text.secondary">Hips:</Typography>
+                                    <Typography variant="body2" fontWeight={600}>{measurement.hips || 'N/A'} cm</Typography>
+                                  </Box>
+                                </Card>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+                      ) : (
+                        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                          No measurement history available
+                        </Typography>
+                      )}
+                    </Box>
+                  </Card>
+                </Grid>
+              </Grid>
             </TabPanel>
 
             {/* Tab 1: Body Composition (Body Fat, Muscle Mass, etc.) */}
@@ -1850,6 +2302,239 @@ const BodyMetricsPage: React.FC = () => {
           </Box>
         </Card>
       </Container>
+
+      {/* Floating Action Button for Quick Actions */}
+      <Fab
+        color="primary"
+        aria-label="quick actions"
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          background: 'linear-gradient(135deg, #e94560 0%, #ff9f43 100%)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #d63384 0%, #e94560 100%)',
+            transform: 'scale(1.1)'
+          }
+        }}
+        onClick={() => setShowQuickAdd(true)}
+      >
+        <SpeedDialIcon />
+      </Fab>
+
+      {/* Speed Dial Actions */}
+      <SpeedDial
+        ariaLabel="Quick Actions"
+        sx={{ position: 'fixed', bottom: 24, right: 24 }}
+        icon={<SpeedDialIcon />}
+        open={showQuickAdd}
+        onClose={() => setShowQuickAdd(false)}
+        onOpen={() => setShowQuickAdd(true)}
+      >
+        <SpeedDialAction
+          icon={<Scale />}
+          tooltipTitle="Quick Weight Log"
+          onClick={() => {
+            setShowQuickAdd(false);
+            setWeightDialogOpen(true);
+          }}
+          sx={{
+            background: 'linear-gradient(135deg, #00d4aa 0%, #00b894 100%)',
+            color: 'white'
+          }}
+        />
+        <SpeedDialAction
+          icon={<FitnessCenter />}
+          tooltipTitle="Quick Measurements"
+          onClick={() => {
+            setShowQuickAdd(false);
+            setMeasurementsDialogOpen(true);
+          }}
+          sx={{
+            background: 'linear-gradient(135deg, #3742fa 0%, #5c6bc0 100%)',
+            color: 'white'
+          }}
+        />
+        <SpeedDialAction
+          icon={<Analytics />}
+          tooltipTitle="Quick Composition"
+          onClick={() => {
+            setShowQuickAdd(false);
+            setCompositionDialogOpen(true);
+          }}
+          sx={{
+            background: 'linear-gradient(135deg, #ff9f43 0%, #f39c12 100%)',
+            color: 'white'
+          }}
+        />
+      </SpeedDial>
+
+      {/* Comprehensive Help Dialog */}
+      <Dialog
+        open={showHelp}
+        onClose={() => setShowHelp(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+            boxShadow: '0px 25px 80px rgba(0, 0, 0, 0.15)'
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          background: 'linear-gradient(135deg, #3742fa 0%, #5c6bc0 100%)',
+          color: 'white',
+          textAlign: 'center',
+          py: 3
+        }}>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            🆘 Help & Tutorial
+          </Typography>
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 4 }}>
+          <Accordion defaultExpanded>
+            <AccordionSummary expandIcon={<KeyboardArrowDown />}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                📊 Understanding Body Metrics
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Body metrics help you track your fitness progress comprehensively. Here's what each section means:
+              </Typography>
+              <List>
+                <ListItem>
+                  <ListItemIcon><FitnessCenter color="primary" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Body Measurements" 
+                    secondary="Circumference measurements (chest, waist, hips, etc.) help track muscle growth and body composition changes."
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><Analytics color="secondary" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Body Composition" 
+                    secondary="Body fat percentage, muscle mass, and water content give you insights into your body's composition."
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><Scale color="info" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Weight Tracking" 
+                    secondary="Regular weight logging helps identify patterns and track progress towards your goals."
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><Target color="success" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Goal Setting" 
+                    secondary="Set realistic fitness goals and track your progress with visual indicators."
+                  />
+                </ListItem>
+              </List>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion>
+            <AccordionSummary expandIcon={<KeyboardArrowDown />}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                🎯 Setting Effective Goals
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Setting realistic and achievable fitness goals is crucial for long-term success:
+              </Typography>
+              <List>
+                <ListItem>
+                  <ListItemIcon><Star color="warning" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Be Specific" 
+                    secondary="Instead of 'lose weight', aim for 'lose 5kg in 3 months'."
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><TrendingUp color="success" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Track Progress" 
+                    secondary="Regular measurements help you see incremental progress and stay motivated."
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><CalendarToday color="info" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Set Timeframes" 
+                    secondary="Give yourself realistic deadlines to create urgency and focus."
+                  />
+                </ListItem>
+              </List>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion>
+            <AccordionSummary expandIcon={<KeyboardArrowDown />}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                💡 Pro Tips for Better Results
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Maximize your fitness tracking effectiveness with these expert tips:
+              </Typography>
+              <List>
+                <ListItem>
+                  <ListItemIcon><AccessTime color="primary" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Consistent Timing" 
+                    secondary="Measure at the same time of day for more accurate comparisons."
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><WaterDrop color="info" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Stay Hydrated" 
+                    secondary="Proper hydration affects body composition measurements and overall health."
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><DirectionsRun color="success" /></ListItemIcon>
+                  <ListItemText 
+                    primary="Combine with Exercise" 
+                    secondary="Use these metrics alongside your workout routine for comprehensive fitness tracking."
+                  />
+                </ListItem>
+              </List>
+            </AccordionDetails>
+          </Accordion>
+        </DialogContent>
+        
+        <DialogActions sx={{ 
+          p: 3, 
+          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+          borderTop: '1px solid rgba(0, 0, 0, 0.1)'
+        }}>
+          <Button 
+            onClick={() => setShowHelp(false)}
+            variant="contained"
+            sx={{
+              px: 4,
+              py: 1.5,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #3742fa 0%, #5c6bc0 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5c6bc0 0%, #3f51b5 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0px 8px 25px rgba(55, 66, 250, 0.3)'
+              }
+            }}
+          >
+            Got It!
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Beautifully Redesigned Dialogs */}
       

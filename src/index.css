@@ -43,3 +43,32 @@ textarea:focus {
   outline: 2px solid #1976d2;
   outline-offset: 2px;
 }
+
+/* Remove focus outline from tabs specifically */
+.MuiTab-root:focus,
+.MuiTab-root:focus-visible,
+.MuiTab-root:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove focus outline from tab containers */
+.MuiTabs-root .MuiTab-root:focus,
+.MuiTabs-root .MuiTab-root:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure smooth tab transitions without focus artifacts */
+.MuiTab-root {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Remove any default browser focus styles */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: none;
+}

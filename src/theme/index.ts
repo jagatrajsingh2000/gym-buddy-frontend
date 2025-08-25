@@ -178,8 +178,21 @@ export const theme = createTheme({
           fontWeight: 600,
           textTransform: 'none',
           color: '#6b7280',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&.Mui-selected': {
             color: '#1a1a2e'
+          },
+          '&:focus': {
+            outline: 'none',
+            boxShadow: 'none'
+          },
+          '&:focus-visible': {
+            outline: 'none',
+            boxShadow: 'none'
+          },
+          '&:focus-within': {
+            outline: 'none',
+            boxShadow: 'none'
           }
         }
       }
