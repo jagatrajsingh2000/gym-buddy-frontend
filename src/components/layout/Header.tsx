@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   AppBar, 
   Toolbar, 
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onMobileMenuTogg
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -32,6 +34,16 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onMobileMenuTogg
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+    handleClose();
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+    handleClose();
   };
 
   const handleLogout = () => {
@@ -140,68 +152,67 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onMobileMenuTogg
                 background: 'linear-gradient(135deg, #00d4aa 0%, #00b894 100%)',
                 color: 'white',
                 fontWeight: 600,
-                fontSize: '0.7rem',
-                height: '24px',
+                fontSize: '0.65rem',
+                height: '22px',
                 '& .MuiChip-label': {
-                  px: 1.5
+                  px: 1.2
                 }
               }}
             />
             
             {/* Notifications */}
             <IconButton
-              size="large"
+              size="small"
               color="inherit"
               sx={{
+                p: 0.5,
                 '&:hover': {
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  transform: 'scale(1.1)'
+                  transform: 'scale(1.05)'
                 },
                 transition: 'all 0.2s ease-in-out'
               }}
             >
-              <Notifications />
+              <Notifications sx={{ fontSize: '1.2rem' }} />
             </IconButton>
             
             {/* User Info */}
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center',
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: 3,
-              px: 2,
-              py: 1,
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(10px)'
+              gap: 1
             }}>
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  mr: 2,
                   fontWeight: 600,
-                  color: 'white'
+                  color: 'white',
+                  fontSize: '0.85rem',
+                  textShadow: '0px 1px 2px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 {getUserDisplayName(user)}
               </Typography>
               <IconButton
-                size="large"
+                size="small"
                 onClick={handleMenu}
                 color="inherit"
                 sx={{
+                  p: 0.4,
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    transform: 'scale(1.1)'
+                    transform: 'scale(1.05)'
                   },
                   transition: 'all 0.2s ease-in-out'
                 }}
               >
                 <Avatar sx={{ 
-                  width: 36, 
-                  height: 36,
+                  width: 30, 
+                  height: 30,
                   background: 'linear-gradient(135deg, #e94560 0%, #ff9f43 100%)',
-                  border: '2px solid rgba(255, 255, 255, 0.3)',
-                  boxShadow: '0px 4px 15px rgba(233, 69, 96, 0.3)'
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  boxShadow: '0px 2px 8px rgba(233, 69, 96, 0.3)',
+                  fontSize: '0.9rem'
                 }}>
                   <AccountCircle />
                 </Avatar>
@@ -224,7 +235,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onMobileMenuTogg
               }}
             >
               <MenuItem 
-                onClick={handleClose}
+                onClick={handleProfileClick}
                 sx={{
                   '&:hover': {
                     backgroundColor: 'rgba(233, 69, 96, 0.05)',
@@ -237,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onMobileMenuTogg
                 Profile
               </MenuItem>
               <MenuItem 
-                onClick={handleClose}
+                onClick={handleSettingsClick}
                 sx={{
                   '&:hover': {
                     backgroundColor: 'rgba(0, 212, 170, 0.05)',

@@ -11,7 +11,6 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { workoutService, Workout } from '../../services/workoutService';
-import { getDemoWorkouts } from '../../data/demoWorkouts';
 
 interface Exercise {
   id: string;
@@ -54,14 +53,7 @@ const ClientWorkouts: React.FC = () => {
     const fetchWorkouts = async () => {
       try {
         setLoading(true);
-        let workoutData: Workout[] = [];
-        
-        if (user?.userType === 'client') {
-          workoutData = getDemoWorkouts('client');
-        } else {
-          workoutData = await workoutService.getUserWorkouts(token!);
-        }
-        
+        const workoutData = await workoutService.getUserWorkouts(token!);
         setWorkouts(workoutData);
       } catch (err) {
         setError('Failed to fetch workouts');

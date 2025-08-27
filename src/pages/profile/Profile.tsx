@@ -18,13 +18,11 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
-  Divider
+  MenuItem
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Save as SaveIcon,
-  Cancel as CancelIcon,
   Person as PersonIcon,
   FitnessCenter as GymIcon,
   PersonOutline as TrainerIcon,
@@ -32,7 +30,7 @@ import {
   Lock as LockIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
-import { authService, clientService, ClientProfileData, UpdateClientProfileData, UpdateUserProfileData } from '../../services';
+import { authService, clientService, ClientProfileData, UpdateClientProfileData, ProfileUpdateRequest } from '../../services';
 
 const Profile: React.FC = () => {
   const { user: authUser, token, updateProfile } = useAuth();
@@ -45,11 +43,14 @@ const Profile: React.FC = () => {
   // Edit states
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editType, setEditType] = useState<'user' | 'client' | 'password' | null>(null);
-  const [userFormData, setUserFormData] = useState<UpdateUserProfileData>({
+  const [userFormData, setUserFormData] = useState<ProfileUpdateRequest>({
     firstName: '',
     lastName: '',
     phone: '',
-    dateOfBirth: ''
+    dateOfBirth: '',
+    gender: 'prefer_not_to_say',
+    height: undefined,
+    heightUnit: 'cm'
   });
   const [clientFormData, setClientFormData] = useState<UpdateClientProfileData>({
     managementType: 'self',
@@ -73,35 +74,35 @@ const Profile: React.FC = () => {
       const response = await authService.getProfile(token);
       
       if (response.success && response.data) {
-        const userData = response.data.user;
+        const userData = response.data;
         
-        if (userData.userType === 'client' && userData.client) {
+        if (userData.userType === 'client' && userData.clientProfile) {
           // Create profile structure from API response
           const profileData: ClientProfileData = {
-            id: userData.client.id,
-            userId: userData.client.userId,
-            managementType: userData.client.managementType,
-            currentGymId: userData.client.currentGymId,
-            currentTrainerId: userData.client.currentTrainerId,
-            clientSource: userData.client.clientSource,
-            independenceRequestedAt: userData.client.independenceRequestedAt,
-            independenceGrantedAt: userData.client.independenceGrantedAt,
-            created_at: userData.client.created_at,
-            updated_at: userData.client.updated_at,
+            id: userData.clientProfile.id,
+            userId: userData.clientProfile.userId,
+            managementType: userData.clientProfile.managementType,
+            currentGymId: userData.clientProfile.currentGymId,
+            currentTrainerId: userData.clientProfile.currentTrainerId,
+            clientSource: userData.clientProfile.clientSource,
+            independenceRequestedAt: userData.clientProfile.independenceRequestedAt,
+            independenceGrantedAt: userData.clientProfile.independenceGrantedAt,
+            created_at: userData.clientProfile.created_at,
+            updated_at: userData.clientProfile.updated_at,
             user: {
               id: userData.id,
               email: userData.email,
               userType: userData.userType,
               firstName: userData.firstName,
               lastName: userData.lastName,
-              phone: userData.phone,
-              dateOfBirth: userData.dateOfBirth,
-              status: userData.status,
+              phone: userData.phone || null,
+              dateOfBirth: userData.dateOfBirth || null,
+              status: userData.status as 'active' | 'inactive',
               created_at: userData.created_at,
               updated_at: userData.updated_at
             },
             gym: null, // Will be populated if currentGymId exists
-            trainer: userData.trainer || null
+            trainer: null // Will be populated if currentTrainerId exists
           };
           
           setProfile(profileData);
@@ -111,12 +112,15 @@ const Profile: React.FC = () => {
             firstName: userData.firstName || '',
             lastName: userData.lastName || '',
             phone: userData.phone || '',
-            dateOfBirth: userData.dateOfBirth || ''
+            dateOfBirth: userData.dateOfBirth || '',
+            gender: userData.gender || 'prefer_not_to_say',
+            height: userData.height || undefined,
+            heightUnit: userData.heightUnit || 'cm'
           });
           
           setClientFormData({
-            managementType: userData.client.managementType,
-            clientSource: userData.client.clientSource
+            managementType: userData.clientProfile.managementType,
+            clientSource: userData.clientProfile.clientSource
           });
         } else {
           // For non-client users, create basic profile structure
@@ -137,9 +141,9 @@ const Profile: React.FC = () => {
               userType: userData.userType as 'client',
               firstName: userData.firstName,
               lastName: userData.lastName,
-              phone: userData.phone,
-              dateOfBirth: userData.dateOfBirth,
-              status: userData.status,
+              phone: userData.phone || null,
+              dateOfBirth: userData.dateOfBirth || null,
+              status: userData.status as 'active' | 'inactive',
               created_at: userData.created_at,
               updated_at: userData.updated_at
             },
@@ -221,7 +225,19 @@ const Profile: React.FC = () => {
       const response = await clientService.updateClientProfile(token, clientFormData);
 
       if (response.success && response.data) {
-        setProfile(response.data.client);
+        // Update the profile with the new client data
+        setProfile(prevProfile => {
+          if (prevProfile && response.data && response.data.client) {
+            return {
+              ...prevProfile,
+              managementType: response.data.client.managementType,
+              clientSource: response.data.client.clientSource,
+              updated_at: response.data.client.updated_at
+            };
+          }
+          return prevProfile;
+        });
+        
         setSuccess('Client profile updated successfully');
         setEditDialogOpen(false);
       } else {
@@ -247,17 +263,17 @@ const Profile: React.FC = () => {
       setError(null);
       setSuccess(null);
 
-      const response = await updateProfile({
+      const response = await authService.changePassword(token, {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
 
-      if (response) {
+      if (response.success) {
         setSuccess('Password changed successfully');
         setEditDialogOpen(false);
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       } else {
-        setError('Failed to change password');
+        setError(response.message || 'Failed to change password');
       }
     } catch (err) {
       console.error('Failed to change password:', err);
@@ -375,6 +391,17 @@ const Profile: React.FC = () => {
                 />
               </Box>
             </Box>
+
+          </Box>
+        </Paper>
+
+        {/* Basic Information */}
+        <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="h6">Basic Information</Typography>
+            </Box>
             <Button
               variant="contained"
               startIcon={<EditIcon />}
@@ -383,50 +410,108 @@ const Profile: React.FC = () => {
               Edit Profile
             </Button>
           </Box>
-        </Paper>
-
-        {/* Basic Information */}
-        <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Basic Information</Typography>
-          </Box>
+          
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="First Name"
-                value={profile.user.firstName}
-                InputProps={{ readOnly: true }}
-                variant="outlined"
-              />
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: 'grey.50', 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  First Name
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  {profile.user.firstName}
+                </Typography>
+              </Box>
             </Grid>
+            
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Last Name"
-                value={profile.user.lastName}
-                InputProps={{ readOnly: true }}
-                variant="outlined"
-              />
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: 'grey.50', 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Last Name
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  {profile.user.lastName}
+                </Typography>
+              </Box>
             </Grid>
+            
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Phone Number"
-                value={profile.user.phone || 'Not provided'}
-                InputProps={{ readOnly: true }}
-                variant="outlined"
-              />
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: 'grey.50', 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Phone Number
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  {profile.user.phone || 'Not provided'}
+                </Typography>
+              </Box>
             </Grid>
+            
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Date of Birth"
-                value={profile.user.dateOfBirth || 'Not provided'}
-                InputProps={{ readOnly: true }}
-                variant="outlined"
-              />
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: 'grey.50', 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Date of Birth
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  {profile.user.dateOfBirth || 'Not provided'}
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: 'grey.50', 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Gender
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  {profile.user.gender ? profile.user.gender.charAt(0).toUpperCase() + profile.user.gender.slice(1) : 'Not provided'}
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: 'grey.50', 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Height
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  {profile.user.height ? `${profile.user.height} ${profile.user.heightUnit || 'cm'}` : 'Not provided'}
+                </Typography>
+              </Box>
             </Grid>
           </Grid>
         </Paper>
@@ -441,7 +526,11 @@ const Profile: React.FC = () => {
                   <GymIcon sx={{ mr: 1, color: 'secondary.main' }} />
                   <Typography variant="h6">Management Preferences</Typography>
                 </Box>
-                <Button size="small" onClick={() => openEditDialog('client')}>
+                <Button
+                  variant="contained"
+                  startIcon={<EditIcon />}
+                  onClick={() => openEditDialog('client')}
+                >
                   Edit
                 </Button>
               </Box>
@@ -527,7 +616,11 @@ const Profile: React.FC = () => {
               <LockIcon sx={{ mr: 1, color: 'warning.main' }} />
               <Typography variant="h6">Security</Typography>
             </Box>
-            <Button size="small" onClick={() => openEditDialog('password')}>
+            <Button
+              variant="contained"
+              startIcon={<EditIcon />}
+              onClick={() => openEditDialog('password')}
+            >
               Change Password
             </Button>
           </Box>
@@ -583,6 +676,52 @@ const Profile: React.FC = () => {
                   onChange={(e) => setUserFormData({ ...userFormData, dateOfBirth: e.target.value })}
                   sx={{ mb: 2 }}
                 />
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Gender</InputLabel>
+                  <Select
+                    label="Gender"
+                    name="gender"
+                    value={userFormData.gender}
+                    onChange={(e) => setUserFormData({ ...userFormData, gender: e.target.value as 'male' | 'female' | 'other' | 'prefer_not_to_say' })}
+                  >
+                    <MenuItem value="male">Male</MenuItem>
+                    <MenuItem value="female">Female</MenuItem>
+                    <MenuItem value="other">Other</MenuItem>
+                    <MenuItem value="prefer_not_to_say">Prefer not to say</MenuItem>
+                  </Select>
+                </FormControl>
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={8}>
+                    <TextField
+                      fullWidth
+                      label="Height"
+                      name="height"
+                      type="number"
+                      inputProps={{ 
+                        min: 0.01, 
+                        max: 999.99, 
+                        step: 0.01 
+                      }}
+                      value={userFormData.height || ''}
+                      onChange={(e) => setUserFormData({ ...userFormData, height: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      helperText="Enter height value"
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>Unit</InputLabel>
+                      <Select
+                        label="Unit"
+                        name="heightUnit"
+                        value={userFormData.heightUnit}
+                        onChange={(e) => setUserFormData({ ...userFormData, heightUnit: e.target.value as 'cm' | 'ft' })}
+                      >
+                        <MenuItem value="cm">cm</MenuItem>
+                        <MenuItem value="ft">ft</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
               </Box>
             )}
 

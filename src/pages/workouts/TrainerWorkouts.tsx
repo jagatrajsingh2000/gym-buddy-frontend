@@ -12,7 +12,6 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { workoutService, Workout } from '../../services/workoutService';
-import { getDemoWorkouts } from '../../data/demoWorkouts';
 
 interface Exercise {
   id: string;

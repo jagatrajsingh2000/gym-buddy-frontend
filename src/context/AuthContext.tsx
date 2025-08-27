@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { authService, User } from '../services/authService';
-import { validateDemoCredentials, DemoUser } from '../data/demoCredentials';
 
 interface AuthContextType {
   user: User | null;
@@ -31,86 +30,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  // Simple function to restore user from localStorage
-  const restoreUserFromStorage = () => {
+  // Restore user from localStorage on mount
+  const restoreUserFromStorage = async () => {
     const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    const savedDemoUser = localStorage.getItem('demo_user');
-    
-    console.log('🔄 Restoring from storage:', { 
-      hasToken: !!savedToken, 
-      hasUser: !!savedUser, 
-      hasDemoUser: !!savedDemoUser 
-    });
     
     if (savedToken) {
-      if (savedDemoUser && savedToken.startsWith('demo_token_')) {
-        try {
-          const demoUser = JSON.parse(savedDemoUser);
-          setUser(demoUser);
-          console.log('✅ Restored demo user:', demoUser.email);
-        } catch (e) {
-          console.log('❌ Failed to parse demo user');
+      try {
+        // Verify token with backend and get user profile
+        const response = await authService.getProfile(savedToken);
+        if (response.success && response.data) {
+          setUser(response.data);
+          setToken(savedToken);
+        } else {
+          // Token is invalid, clear it
+          localStorage.removeItem('token');
+          setToken(null);
         }
-      } else if (savedUser) {
-        try {
-          const regularUser = JSON.parse(savedUser);
-          setUser(regularUser);
-          console.log('✅ Restored regular user:', regularUser.email);
-        } catch (e) {
-          console.log('❌ Failed to parse regular user');
-        }
+      } catch (error) {
+        console.error('Failed to restore user session:', error);
+        localStorage.removeItem('token');
+        setToken(null);
       }
     }
     
-    // Always set loading to false after restoration attempt
     setLoading(false);
   };
 
-  // Single useEffect that runs once on mount
   useEffect(() => {
-    console.log('🚀 AuthContext mounted');
     restoreUserFromStorage();
   }, []);
 
-  // Login function with demo credentials fallback
+  // Login function using real API
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      // Check for demo credentials first
-      const demoUser = validateDemoCredentials(email, password);
-      if (demoUser) {
-        // Use demo user data
-        const mockToken = `demo_token_${demoUser.profile.id}_${Date.now()}`;
-        const user: User = {
-          id: demoUser.profile.id,
-          email: demoUser.email,
-          userType: demoUser.userType,
-          firstName: demoUser.profile.firstName,
-          lastName: demoUser.profile.lastName,
-          phone: '',
-          dateOfBirth: null,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        setToken(mockToken);
-        setUser(user);
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('demo_user', JSON.stringify(user));
-        localStorage.setItem('user', JSON.stringify(user));
-        return true;
-      }
-
-      // Fallback to real API
       const response = await authService.login({ email, password });
-      if (response.success) {
+      if (response.success && response.data) {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        localStorage.removeItem('demo_user'); // Clear demo data
         return true;
       } else {
         console.error('Login failed:', response.message);
@@ -126,18 +84,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout function
   const logout = async () => {
-    if (token && !token.startsWith('demo_token_')) {
+    if (token) {
       try {
-        await authService.logout(token);
+        const response = await authService.logout(token);
+        if (response.success && response.data) {
+          console.log('Logout successful:', {
+            logoutTime: response.data.logoutTime,
+            tokenInvalidated: response.data.tokenInvalidated
+          });
+        } else {
+          console.warn('Logout warning:', response.message);
+        }
       } catch (error) {
         console.error('Logout error:', error);
       }
     }
+    
+    // Always clear local state regardless of API response
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
-    localStorage.removeItem('demo_user');
-    localStorage.removeItem('user');
+    
+    // Redirect to login page
+    window.location.href = '/login';
   };
 
   // Register function using real API
@@ -147,13 +116,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.register({
         email: userData.email || '',
         password: userData.password,
-        userType: userData.userType || 'client',
+        userType: (userData.userType as 'client' | 'trainer' | 'gym') || 'client',
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
-        phone: userData.phone || undefined
+        phone: userData.phone || undefined,
+        dateOfBirth: userData.dateOfBirth || undefined,
+        gender: userData.gender || undefined,
+        height: userData.height || undefined,
+        heightUnit: userData.heightUnit || undefined
       });
       
-      if (response.success) {
+      if (response.success && response.data) {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem('token', response.data.token);
@@ -176,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       const response = await authService.updateProfile(token, profileData);
-      if (response.success) {
+      if (response.success && response.data) {
         setUser(response.data);
         return true;
       }
@@ -186,9 +159,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return false;
     }
   };
-
-  // Debug logging for authentication state
-  console.log('🔐 AuthContext state:', { user: !!user, token: !!token, loading });
 
   const value: AuthContextType = {
     user,

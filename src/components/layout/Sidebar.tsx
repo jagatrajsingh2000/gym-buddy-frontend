@@ -10,8 +10,7 @@ import {
   Box,
   Typography,
   useTheme,
-  useMediaQuery,
-  Divider
+  useMediaQuery
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import {

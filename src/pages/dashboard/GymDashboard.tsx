@@ -1,15 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  Box, Typography, Paper, Card, CardContent, List, ListItem, ListItemText, ListItemIcon, Chip, CircularProgress, Alert,
-  TextField, InputAdornment, Button, Grid, Avatar, Rating, Divider, Tabs, Tab, Dialog, DialogTitle, DialogContent,
-  DialogActions, FormControl, InputLabel, Select, MenuItem, IconButton, LinearProgress
+  Box,
+  Typography,
+  Paper,
+  Tabs,
+  Tab,
+  Card,
+  CardContent,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Avatar,
+  InputAdornment,
+  LinearProgress
 } from '@mui/material';
-import { Grid as GridComponent } from '../../components/common';
 import {
-  FitnessCenter, TrendingUp, CalendarToday, CheckCircle, Schedule, Search, LocationOn, Person,
-  Phone, Email, Directions, Add as AddIcon, Edit as EditIcon, Assignment as AssignmentIcon,
-  Group as GroupIcon, Restaurant, AdminPanelSettings, Business, Analytics, Security
+  Person,
+  Phone,
+  Email,
+  Edit as EditIcon,
+  Add as AddIcon,
+  Business,
+  Group as GroupIcon,
+  Security as SecurityIcon,
+  Assignment as AssignmentIcon,
+  Search
 } from '@mui/icons-material';
+import { Grid as GridComponent } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 
 interface Trainer {
@@ -53,7 +79,7 @@ interface GymOperation {
   description: string;
 }
 
-// Mock data for admin dashboard
+// Mock data for gym dashboard
 const mockTrainers: Trainer[] = [
   {
     id: 1,
@@ -197,7 +223,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const AdminDashboard: React.FC = () => {
+const GymDashboard: React.FC = () => {
   const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -252,7 +278,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <Box sx={{ p: { xs: 0.5, sm: 1, md: 2 }, maxWidth: '100%' }}>
       <Typography variant="h4" sx={{ mb: { xs: 0.5, sm: 1 }, fontWeight: 600, color: 'text.primary' }}>
-        Welcome, Admin {user?.firstName}! 🏢
+        Welcome, Gym Owner {user?.firstName}! 🏢
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: { xs: 1, sm: 2 } }}>
         Manage your gym operations, trainers, clients, and system analytics
@@ -295,7 +321,7 @@ const AdminDashboard: React.FC = () => {
         </GridComponent>
         <GridComponent item xs={12} sm={6} md={3}>
           <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center', height: '100%' }}>
-            <Analytics sx={{ fontSize: { xs: 32, sm: 40 }, color: 'info.main', mb: 1 }} />
+            <SecurityIcon sx={{ fontSize: { xs: 32, sm: 40 }, color: 'info.main', mb: 1 }} />
             <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
               95%
             </Typography>
@@ -309,7 +335,7 @@ const AdminDashboard: React.FC = () => {
       {/* Main Content Tabs */}
       <Paper elevation={2} sx={{ width: '100%' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin dashboard tabs">
+          <Tabs value={tabValue} onChange={handleTabChange} aria-label="gym dashboard tabs">
             <Tab label="Overview" />
             <Tab label="Manage Trainers" />
             <Tab label="Manage Clients" />
@@ -389,7 +415,7 @@ const AdminDashboard: React.FC = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      startIcon={<Analytics />}
+                      startIcon={<SecurityIcon />}
                       fullWidth
                       onClick={() => setTabValue(4)}
                     >
@@ -992,4 +1018,4 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-export default AdminDashboard;
+export default GymDashboard;

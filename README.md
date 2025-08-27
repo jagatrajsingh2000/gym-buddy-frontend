@@ -56,7 +56,7 @@ This frontend is fully integrated with the Gym Buddy backend API, which provides
 - **Progress Monitoring**: Status tracking and analytics
 
 ### **API Base URL**
-- **Development**: `http://localhost:3000/api`
+- **Development**: `http://localhost:8000/api`
 - **Production**: Configure via `REACT_APP_API_URL` environment variable
 
 ## 🔐 **Authentication**
@@ -118,15 +118,15 @@ The app is built with a mobile-first approach and includes:
 ## 🧪 **Testing the App**
 
 ### **1. Start the Backend**
-Ensure your Gym Buddy backend is running on `http://localhost:3000`
+Ensure your Gym Buddy backend is running on `http://localhost:8000`
 
 ### **2. Test API Endpoints**
 ```bash
 # Health check
-curl http://localhost:3000/api/health
+curl http://localhost:8000/api/health
 
 # Get available endpoints
-curl http://localhost:3000/api/
+curl http://localhost:8000/api/
 ```
 
 ### **3. Create a Test Account**

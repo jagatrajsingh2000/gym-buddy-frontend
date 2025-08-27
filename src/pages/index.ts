@@ -13,5 +13,5 @@ export { default as ClientDiet } from './diet/ClientDiet';
 export { default as TrainerDashboard } from './dashboard/TrainerDashboard';
 export { default as TrainerWorkouts } from './workouts/TrainerWorkouts';
 export { default as TrainerDiet } from './diet/TrainerDiet';
-export { default as AdminDashboard } from './dashboard/AdminDashboard';
+export { default as GymDashboard } from './dashboard/GymDashboard';
 export { default as BodyMetrics } from './body-metrics/BodyMetrics';

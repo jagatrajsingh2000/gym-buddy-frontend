@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Card, CardContent, List, ListItem, ListItemText, ListItemIcon, Chip, CircularProgress, Alert,
-  TextField, InputAdornment, Button, Grid, Avatar, Rating, Divider, Tabs, Tab, Dialog, DialogTitle, DialogContent,
+  TextField, InputAdornment, Button, Avatar, Rating, Divider, Tabs, Tab, Dialog, DialogTitle, DialogContent,
   DialogActions, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import { Grid as GridComponent } from '../../components/common';
 import {
-  FitnessCenter, TrendingUp, CalendarToday, CheckCircle, Schedule, Search, LocationOn, Star, Person,
-  Phone, Email, AccessTime, Directions
+  FitnessCenter, TrendingUp, CalendarToday, CheckCircle, Schedule, Search, LocationOn, Person,
+  Phone, Email, Directions
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { workoutService, Workout } from '../../services/workoutService';
-import { getDemoWorkouts } from '../../data/demoWorkouts';
 
 // Mock data for trainers and gyms
 const mockTrainers = [
@@ -136,16 +135,7 @@ const ClientDashboard: React.FC = () => {
     const fetchWorkouts = async () => {
       try {
         setLoading(true);
-        let workoutData: Workout[] = [];
-        
-        if (user?.userType === 'client') {
-          // Use demo data for demo users
-          workoutData = getDemoWorkouts('client');
-        } else {
-          // Fetch from API for real users
-          workoutData = await workoutService.getUserWorkouts(token!);
-        }
-        
+        const workoutData = await workoutService.getUserWorkouts(token!);
         setWorkouts(workoutData);
       } catch (err) {
         setError('Failed to fetch workouts');

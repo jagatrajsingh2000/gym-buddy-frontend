@@ -6,7 +6,7 @@ import { theme } from './theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
-import { Login, Register, Dashboard, Workouts, Progress, Profile, Schedule, Settings, Chat, BodyMetrics } from './pages';
+import { Login, Register, Dashboard, Workouts, Progress, Profile, Schedule, Settings, Chat, BodyMetrics, GymDashboard } from './pages';
 import TestAuth from './pages/TestAuth';
 import ClientDashboard from './pages/dashboard/ClientDashboard';
 import ClientWorkouts from './pages/workouts/ClientWorkouts';
@@ -64,11 +64,13 @@ const MainLayout: React.FC = () => {
                  <Route path="/dashboard" element={
                    user?.userType === 'client' ? <ClientDashboard /> : 
                    user?.userType === 'trainer' ? <TrainerDashboard /> : 
+                   user?.userType === 'gym' ? <GymDashboard /> :
                    <Dashboard />
                  } />
                  <Route path="/workouts" element={
                    user?.userType === 'client' ? <ClientWorkouts /> : 
                    user?.userType === 'trainer' ? <TrainerWorkouts /> : 
+                   user?.userType === 'gym' ? <Workouts /> :
                    <Workouts />
                  } />
                  <Route path="/progress" element={<Progress />} />
@@ -78,6 +80,7 @@ const MainLayout: React.FC = () => {
                  <Route path="/diet" element={
                    user?.userType === 'client' ? <ClientDiet /> : 
                    user?.userType === 'trainer' ? <TrainerDiet /> : 
+                   user?.userType === 'gym' ? <Navigate to="/dashboard" replace /> :
                    <Navigate to="/dashboard" replace />
                  } />
                  <Route path="/body-metrics" element={<BodyMetrics />} />

@@ -20,6 +20,9 @@ export interface ClientProfileData {
     lastName: string;
     phone: string | null;
     dateOfBirth: string | null;
+    gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+    height?: number;
+    heightUnit?: 'cm' | 'ft';
     status: 'active' | 'inactive';
     created_at: string;
     updated_at: string;
@@ -53,6 +56,9 @@ export interface UpdateUserProfileData {
   lastName?: string;
   phone?: string;
   dateOfBirth?: string;
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+  height?: number;
+  heightUnit?: 'cm' | 'ft';
 }
 
 export const clientService = {

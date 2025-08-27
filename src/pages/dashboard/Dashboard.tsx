@@ -23,7 +23,6 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { workoutService, Workout } from '../../services/workoutService';
-import { getDemoWorkouts } from '../../data/demoWorkouts';
 
 const Dashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -39,23 +38,15 @@ const Dashboard: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // Check if this is a demo user
-        if (token.startsWith('demo_token_')) {
-          // Use demo data
-          const demoWorkouts = getDemoWorkouts(user.email);
-          setWorkouts(demoWorkouts);
+        const response = await workoutService.getUserWorkouts(token, {
+          limit: 10,
+          page: 1
+        });
+        
+        if (response.success) {
+          setWorkouts(response.data || []);
         } else {
-          // Use real API
-          const response = await workoutService.getUserWorkouts(token, {
-            limit: 10,
-            page: 1
-          });
-          
-          if (response.success) {
-            setWorkouts(response.data || []);
-          } else {
-            setError(response.message || 'Failed to load workouts');
-          }
+          setError(response.message || 'Failed to load workouts');
         }
       } catch (err) {
         setError('Failed to load workouts. Please try again.');

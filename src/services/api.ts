@@ -14,6 +14,7 @@ export interface ApiError {
   details?: any;
 }
 
+
 export const api = {
   baseURL: API_BASE_URL,
   headers: {
