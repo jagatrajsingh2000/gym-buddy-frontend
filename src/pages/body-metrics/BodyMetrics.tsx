@@ -15,6 +15,7 @@ import BodyCompositionUpdateTest from '../../components/BodyCompositionUpdateTes
 import BodyCompositionDeleteTest from '../../components/BodyCompositionDeleteTest';
 import BodyCompositionAnalyticsTest from '../../components/BodyCompositionAnalyticsTest';
 import WeightHistoryCard from '../../components/WeightHistoryCard';
+import BodyMetricsCard from '../../components/BodyMetricsCard';
 
 const BodyMetricsPage: React.FC = () => {
   const { user: authUser, token, loading: authLoading } = useAuth();
@@ -482,6 +483,9 @@ const BodyMetricsPage: React.FC = () => {
             <BodyCompositionAnalyticsTest />
           </Box>
         </Card>
+
+        {/* Integrated Body Metrics Card */}
+        <BodyMetricsCard />
 
         {/* Integrated Weight Tracking Card */}
         <WeightHistoryCard />
