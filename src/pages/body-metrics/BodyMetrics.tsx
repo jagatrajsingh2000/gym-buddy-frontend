@@ -14,12 +14,7 @@ import BodyCompositionLogTest from '../../components/BodyCompositionLogTest';
 import BodyCompositionUpdateTest from '../../components/BodyCompositionUpdateTest';
 import BodyCompositionDeleteTest from '../../components/BodyCompositionDeleteTest';
 import BodyCompositionAnalyticsTest from '../../components/BodyCompositionAnalyticsTest';
-import WeightHistoryTest from '../../components/WeightHistoryTest';
-import WeightLogTest from '../../components/WeightLogTest';
-import WeightUpdateTest from '../../components/WeightUpdateTest';
-import WeightDeleteTest from '../../components/WeightDeleteTest';
-import WeightAnalyticsTest from '../../components/WeightAnalyticsTest';
-import WeightInsightsTest from '../../components/WeightInsightsTest';
+import WeightHistoryCard from '../../components/WeightHistoryCard';
 
 const BodyMetricsPage: React.FC = () => {
   const { user: authUser, token, loading: authLoading } = useAuth();
@@ -488,149 +483,8 @@ const BodyMetricsPage: React.FC = () => {
           </Box>
         </Card>
 
-        {/* Weight History Test */}
-        <Card sx={{ 
-          mb: 4, 
-          borderRadius: 3, 
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
-          <Box sx={{ 
-            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            p: 3,
-            color: 'white'
-          }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              ⚖️ Weight History API Test
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-              Testing GET /api/body-metrics/weight/history with pagination, filtering, and comprehensive data display
-            </Typography>
-          </Box>
-          <Box sx={{ p: 3 }}>
-            <WeightHistoryTest />
-          </Box>
-        </Card>
-
-        {/* Weight Log Test */}
-        <Card sx={{ 
-          mb: 4, 
-          borderRadius: 3, 
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
-          <Box sx={{ 
-            background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            p: 3,
-            color: 'white'
-          }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              ➕ Weight Log API Test
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-              Testing POST /api/body-metrics/weight/log with comprehensive form validation and data submission
-            </Typography>
-          </Box>
-          <Box sx={{ p: 3 }}>
-            <WeightLogTest />
-          </Box>
-        </Card>
-
-        {/* Weight Update Test */}
-        <Card sx={{ 
-          mb: 4, 
-          borderRadius: 3, 
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
-          <Box sx={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            p: 3,
-            color: 'white'
-          }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              ✏️ Weight Update API Test
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-              Testing PUT /api/body-metrics/weight/:id with partial updates and modification tracking
-            </Typography>
-          </Box>
-          <Box sx={{ p: 3 }}>
-            <WeightUpdateTest />
-          </Box>
-        </Card>
-
-        {/* Weight Delete Test */}
-        <Card sx={{ 
-          mb: 4, 
-          borderRadius: 3, 
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
-          <Box sx={{ 
-            background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
-            p: 3,
-            color: 'white'
-          }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              🗑️ Weight Delete API Test
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-              Testing DELETE /api/body-metrics/weight/:id with confirmation dialogs and safety features
-            </Typography>
-          </Box>
-          <Box sx={{ p: 3 }}>
-            <WeightDeleteTest />
-          </Box>
-        </Card>
-
-        {/* Weight Analytics Test */}
-        <Card sx={{ 
-          mb: 4, 
-          borderRadius: 3, 
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
-          <Box sx={{ 
-            background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
-            p: 3,
-            color: 'white'
-          }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              📊 Weight Analytics API Test
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-              Testing GET /api/body-metrics/weight/analytics with comprehensive analytics and period selection
-            </Typography>
-          </Box>
-          <Box sx={{ p: 3 }}>
-            <WeightAnalyticsTest />
-          </Box>
-        </Card>
-
-        {/* Weight Insights Test */}
-        <Card sx={{ 
-          mb: 4, 
-          borderRadius: 3, 
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
-          <Box sx={{ 
-            background: 'linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)',
-            p: 3,
-            color: 'white'
-          }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              🧠 Weight Insights API Test
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-              Testing GET /api/body-metrics/weight/insights with intelligent insights and personalized recommendations
-            </Typography>
-          </Box>
-          <Box sx={{ p: 3 }}>
-            <WeightInsightsTest />
-          </Box>
-        </Card>
+        {/* Integrated Weight Tracking Card */}
+        <WeightHistoryCard />
 
         {/* Hidden Test Components - Keep code but hide from UI */}
         {/* 
