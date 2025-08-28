@@ -97,6 +97,9 @@ const Profile: React.FC = () => {
               lastName: userData.lastName,
               phone: userData.phone || null,
               dateOfBirth: userData.dateOfBirth || null,
+              gender: userData.gender || undefined,
+              height: userData.height || undefined,
+              heightUnit: userData.heightUnit || undefined,
               status: userData.status as 'active' | 'inactive',
               created_at: userData.created_at,
               updated_at: userData.updated_at
@@ -143,6 +146,9 @@ const Profile: React.FC = () => {
               lastName: userData.lastName,
               phone: userData.phone || null,
               dateOfBirth: userData.dateOfBirth || null,
+              gender: userData.gender || undefined,
+              height: userData.height || undefined,
+              heightUnit: userData.heightUnit || undefined,
               status: userData.status as 'active' | 'inactive',
               created_at: userData.created_at,
               updated_at: userData.updated_at
@@ -170,6 +176,7 @@ const Profile: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProfile();
   }, [token, authUser]);
@@ -301,16 +308,16 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Get client source color
-  const getClientSourceColor = (source: string) => {
-    switch (source) {
-      case 'direct': return 'success';
-      case 'referral': return 'info';
-      case 'online': return 'warning';
-      case 'gym': return 'primary';
-      default: return 'default';
-    }
-  };
+  // Get client source color - commented out as unused
+  // const getClientSourceColor = (source: string) => {
+  //   switch (source) {
+  //     case 'direct': return 'success';
+  //     case 'referral': return 'info';
+  //     case 'online': return 'warning';
+  //     case 'gym': return 'primary';
+  //     default: return 'default';
+  //   }
+  // };
 
   if (loading || !authUser) {
     return (

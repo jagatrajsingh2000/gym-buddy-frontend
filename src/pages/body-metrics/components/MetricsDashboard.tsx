@@ -1,10 +1,11 @@
 import React from 'react';
 import { Box, Typography, Card, Grid, Button, Tooltip, IconButton } from '@mui/material';
 import { Add as AddIcon, Scale, Flag as Target, Help } from '@mui/icons-material';
-import { BodyMetrics } from '../../../services';
+import { BodyMetrics, BodyMeasurements, bodyMetricsUtils } from '../../../services';
 
 interface MetricsDashboardProps {
   currentMetrics: BodyMetrics | null;
+  currentMeasurements: BodyMeasurements | null;
   onOpenMetricsDialog: () => void;
   onOpenWeightDialog: () => void;
   onOpenGoalDialog: () => void;
@@ -12,6 +13,7 @@ interface MetricsDashboardProps {
 
 const MetricsDashboard: React.FC<MetricsDashboardProps> = ({
   currentMetrics,
+  currentMeasurements,
   onOpenMetricsDialog,
   onOpenWeightDialog,
   onOpenGoalDialog
@@ -535,6 +537,214 @@ const MetricsDashboard: React.FC<MetricsDashboardProps> = ({
           </Grid>
         </Grid>
       </Box>
+
+      {/* Body Measurements Section - New API Integration */}
+      {currentMeasurements && (
+        <Box sx={{ mb: 6 }}>
+          <Typography variant="h3" sx={{ 
+            mb: 4, 
+            textAlign: 'center',
+            fontWeight: 700,
+            color: 'text.primary'
+          }}>
+            Current Body Measurements
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            textAlign: 'center', 
+            mb: 4, 
+            color: 'text.secondary',
+            fontStyle: 'italic'
+          }}>
+            Last updated: {bodyMetricsUtils.formatMeasurementDate(currentMeasurements.measurementDate)}
+          </Typography>
+          
+          <Grid container spacing={3}>
+            {/* Chest */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{
+                background: 'linear-gradient(135deg, #e94560 0%, #ff9f43 100%)',
+                color: 'white',
+                textAlign: 'center',
+                p: 3,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <Typography variant="h4" sx={{ 
+                  fontWeight: 700,
+                  mb: 1
+                }}>
+                  {bodyMetricsUtils.formatMeasurement(currentMeasurements.chest)}
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  Chest
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Waist */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{
+                background: 'linear-gradient(135deg, #00d4aa 0%, #00b894 100%)',
+                color: 'white',
+                textAlign: 'center',
+                p: 3,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <Typography variant="h4" sx={{ 
+                  fontWeight: 700,
+                  mb: 1
+                }}>
+                  {bodyMetricsUtils.formatMeasurement(currentMeasurements.waist)}
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  Waist
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Hips */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{
+                background: 'linear-gradient(135deg, #3742fa 0%, #5c6bc0 100%)',
+                color: 'white',
+                textAlign: 'center',
+                p: 3,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <Typography variant="h4" sx={{ 
+                  fontWeight: 700,
+                  mb: 1
+                }}>
+                  {bodyMetricsUtils.formatMeasurement(currentMeasurements.hips)}
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  Hips
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Biceps */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{
+                background: 'linear-gradient(135deg, #ff9f43 0%, #f39c12 100%)',
+                color: 'white',
+                textAlign: 'center',
+                p: 3,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <Typography variant="h4" sx={{ 
+                  fontWeight: 700,
+                  mb: 1
+                }}>
+                  {bodyMetricsUtils.formatMeasurement(currentMeasurements.biceps)}
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  Biceps
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Thighs */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{
+                background: 'linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)',
+                color: 'white',
+                textAlign: 'center',
+                p: 3,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <Typography variant="h4" sx={{ 
+                  fontWeight: 700,
+                  mb: 1
+                }}>
+                  {bodyMetricsUtils.formatMeasurement(currentMeasurements.thighs)}
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  Thighs
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Calves */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{
+                background: 'linear-gradient(135deg, #607d8b 0%, #455a64 100%)',
+                color: 'white',
+                textAlign: 'center',
+                p: 3,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <Typography variant="h4" sx={{ 
+                  fontWeight: 700,
+                  mb: 1
+                }}>
+                  {bodyMetricsUtils.formatMeasurement(currentMeasurements.calves)}
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  Calves
+                </Typography>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Notes Section */}
+          {currentMeasurements.notes && (
+            <Box sx={{ mt: 4, textAlign: 'center' }}>
+              <Card sx={{
+                background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                border: '1px solid',
+                borderColor: 'grey.200',
+                p: 3
+              }}>
+                <Typography variant="h6" sx={{ mb: 2, color: 'text.primary' }}>
+                  Notes
+                </Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                  "{currentMeasurements.notes}"
+                </Typography>
+              </Card>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* No Measurements Message */}
+      {!currentMeasurements && (
+        <Box sx={{ mb: 6, textAlign: 'center' }}>
+          <Card sx={{
+            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+            border: '1px solid',
+            borderColor: 'grey.200',
+            p: 4
+          }}>
+            <Typography variant="h5" sx={{ mb: 2, color: 'text.primary' }}>
+              No Body Measurements Yet
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
+              Start tracking your body measurements to monitor your fitness progress
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={onOpenMetricsDialog}
+              sx={{
+                background: 'linear-gradient(135deg, #e94560 0%, #ff9f43 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #d63384 0%, #e94560 100%)'
+                }
+              }}
+            >
+              Record First Measurement
+            </Button>
+          </Card>
+        </Box>
+      )}
     </>
   );
 };

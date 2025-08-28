@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Documentation and development files
+chat_history.md
+PROJECT_SUMMARY.md
