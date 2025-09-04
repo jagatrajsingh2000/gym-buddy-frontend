@@ -17,7 +17,8 @@ import {
   BarChart
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
-import { bodyMetricsService, bodyCompositionService } from '../../services/bodyMetricsService';
+import { bodyMetricsService, bodyCompositionService, bodyMeasurementsService } from '../../services/bodyMetricsService';
+import { BodyMetricsAnalytics, BodyCompositionAnalytics, WeightTrackingAnalytics } from '../../components/common/analytics';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -69,21 +70,21 @@ const Analytics: React.FC = () => {
     try {
       // Fetch all analytics in parallel
       const [bodyMetricsResponse, weightResponse, compositionResponse] = await Promise.all([
-        bodyMetricsService.getAnalytics(token, 30),
-        bodyMetricsService.getWeightAnalytics(token),
+        bodyMeasurementsService.getBodyMetricsAnalytics(token),
+        bodyMetricsService.getWeightAnalytics(token, { period: 30 }),
         bodyCompositionService.getCompositionAnalytics(token)
       ]);
 
-      if (bodyMetricsResponse.success) {
-        setBodyMetricsAnalytics(bodyMetricsResponse.data);
+      if (bodyMetricsResponse.success && bodyMetricsResponse.data?.analytics) {
+        setBodyMetricsAnalytics(bodyMetricsResponse.data.analytics);
       }
 
-      if (weightResponse.success) {
-        setWeightAnalytics(weightResponse.data);
+      if (weightResponse.success && weightResponse.data?.analytics) {
+        setWeightAnalytics(weightResponse.data.analytics);
       }
 
-      if (compositionResponse.success) {
-        setCompositionAnalytics(compositionResponse.data);
+      if (compositionResponse.success && compositionResponse.data?.analytics) {
+        setCompositionAnalytics(compositionResponse.data.analytics);
       }
 
     } catch (err) {
@@ -173,62 +174,8 @@ const Analytics: React.FC = () => {
 
         {/* Body Metrics Analytics Tab */}
         <TabPanel value={tabValue} index={0}>
-          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-            📏 Body Measurements Analytics
-          </Typography>
-          
           {bodyMetricsAnalytics ? (
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'primary.50' }}>
-                  <Typography variant="h4" color="primary">
-                    {bodyMetricsAnalytics.totalMeasurements || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Measurements
-                  </Typography>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'secondary.50' }}>
-                  <Typography variant="h4" color="secondary">
-                    {bodyMetricsAnalytics.dateRange?.start && bodyMetricsAnalytics.dateRange?.end ? 
-                      Math.ceil((new Date(bodyMetricsAnalytics.dateRange.end).getTime() - new Date(bodyMetricsAnalytics.dateRange.start).getTime()) / (1000 * 60 * 60 * 24)) : 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Days Analyzed
-                  </Typography>
-                </Card>
-              </Grid>
-
-              {/* Progress Cards */}
-              {bodyMetricsAnalytics.progress?.chest && (
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'success.50' }}>
-                    <Typography variant="h6" color="success.main">
-                      Chest: {bodyMetricsAnalytics.progress.chest.change > 0 ? '+' : ''}{bodyMetricsAnalytics.progress.chest.change}cm
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {bodyMetricsAnalytics.progress.chest.trend}
-                    </Typography>
-                  </Card>
-                </Grid>
-              )}
-
-              {bodyMetricsAnalytics.progress?.waist && (
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'info.50' }}>
-                    <Typography variant="h6" color="info.main">
-                      Waist: {bodyMetricsAnalytics.progress.waist.change > 0 ? '+' : ''}{bodyMetricsAnalytics.progress.waist.change}cm
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {bodyMetricsAnalytics.progress.waist.trend}
-                    </Typography>
-                  </Card>
-                </Grid>
-              )}
-            </Grid>
+            <BodyMetricsAnalytics analytics={bodyMetricsAnalytics} />
           ) : (
             <Alert severity="info">
               No body metrics analytics data available
@@ -238,60 +185,8 @@ const Analytics: React.FC = () => {
 
         {/* Weight Analytics Tab */}
         <TabPanel value={tabValue} index={1}>
-          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-            ⚖️ Weight Tracking Analytics
-          </Typography>
-          
           {weightAnalytics ? (
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'primary.50' }}>
-                  <Typography variant="h4" color="primary">
-                    {weightAnalytics.totalEntries || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Entries
-                  </Typography>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'secondary.50' }}>
-                  <Typography variant="h4" color="secondary">
-                    {weightAnalytics.dateRange?.days || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Days Analyzed
-                  </Typography>
-                </Card>
-              </Grid>
-
-              {weightAnalytics.weight && (
-                <>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'success.50' }}>
-                      <Typography variant="h6" color="success.main">
-                        Weight: {weightAnalytics.weight.change > 0 ? '+' : ''}{weightAnalytics.weight.change}kg
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {weightAnalytics.weight.trend}
-                      </Typography>
-                    </Card>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'info.50' }}>
-                      <Typography variant="h6" color="info.main">
-                        BMI: {weightAnalytics.bmi?.change > 0 ? '+' : ''}{weightAnalytics.bmi?.change || 0}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {weightAnalytics.bmi?.trend || 'stable'}
-                      </Typography>
-                    </Card>
-                  </Grid>
-                </>
-              )}
-            </Grid>
+            <WeightTrackingAnalytics analytics={weightAnalytics} />
           ) : (
             <Alert severity="info">
               No weight analytics data available
@@ -301,61 +196,8 @@ const Analytics: React.FC = () => {
 
         {/* Body Composition Analytics Tab */}
         <TabPanel value={tabValue} index={2}>
-          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-            🧬 Body Composition Analytics
-          </Typography>
-          
           {compositionAnalytics ? (
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'primary.50' }}>
-                  <Typography variant="h4" color="primary">
-                    {compositionAnalytics.totalMeasurements || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Measurements
-                  </Typography>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'secondary.50' }}>
-                  <Typography variant="h4" color="secondary">
-                    {compositionAnalytics.dateRange?.start && compositionAnalytics.dateRange?.end ? 
-                      Math.ceil((new Date(compositionAnalytics.dateRange.end).getTime() - new Date(compositionAnalytics.dateRange.start).getTime()) / (1000 * 60 * 60 * 24)) : 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Days Analyzed
-                  </Typography>
-                </Card>
-              </Grid>
-
-              {compositionAnalytics.progress?.bodyFat && (
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'success.50' }}>
-                    <Typography variant="h6" color="success.main">
-                      Body Fat: {compositionAnalytics.progress.bodyFat.change > 0 ? '+' : ''}{compositionAnalytics.progress.bodyFat.change}%
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {compositionAnalytics.progress.bodyFat.trend}
-                    </Typography>
-                  </Card>
-                </Grid>
-              )}
-
-              {compositionAnalytics.progress?.muscleMass && (
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'info.50' }}>
-                    <Typography variant="h6" color="info.main">
-                      Muscle: {compositionAnalytics.progress.muscleMass.change > 0 ? '+' : ''}{compositionAnalytics.progress.muscleMass.change}kg
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {compositionAnalytics.progress.muscleMass.trend}
-                    </Typography>
-                  </Card>
-                </Grid>
-              )}
-            </Grid>
+            <BodyCompositionAnalytics analytics={compositionAnalytics} />
           ) : (
             <Alert severity="info">
               No body composition analytics data available
@@ -370,14 +212,79 @@ const Analytics: React.FC = () => {
           </Typography>
           
           <Grid container spacing={3}>
+            {/* Summary Stats */}
+            <Grid item xs={12}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'primary.50' }}>
+                    <Typography variant="h4" color="primary" fontWeight={600}>
+                      {(bodyMetricsAnalytics?.totalMeasurements || 0) + (weightAnalytics?.totalEntries || 0) + (compositionAnalytics?.totalMeasurements || 0)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Entries
+                    </Typography>
+                  </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'success.50' }}>
+                    <Typography variant="h4" color="success.main" fontWeight={600}>
+                      {bodyMetricsAnalytics ? '✓' : '○'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Body Metrics
+                    </Typography>
+                  </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'info.50' }}>
+                    <Typography variant="h4" color="info.main" fontWeight={600}>
+                      {weightAnalytics ? '✓' : '○'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Weight Tracking
+                    </Typography>
+                  </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'warning.50' }}>
+                    <Typography variant="h4" color="warning.main" fontWeight={600}>
+                      {compositionAnalytics ? '✓' : '○'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Body Composition
+                    </Typography>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Grid>
+
+            {/* Quick Insights */}
             <Grid item xs={12} md={6}>
               <Card sx={{ p: 3, bgcolor: 'primary.50' }}>
                 <Typography variant="h6" color="primary" gutterBottom>
                   📈 Progress Overview
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   Track your overall fitness journey across all metrics
                 </Typography>
+                {bodyMetricsAnalytics && (
+                  <Typography variant="body2" color="text.secondary">
+                    • Body measurements tracked over {bodyMetricsAnalytics.dateRange ? Math.ceil((new Date(bodyMetricsAnalytics.dateRange.end).getTime() - new Date(bodyMetricsAnalytics.dateRange.start).getTime()) / (1000 * 60 * 60 * 24)) : 0} days
+                  </Typography>
+                )}
+                {weightAnalytics && (
+                  <Typography variant="body2" color="text.secondary">
+                    • Weight tracking with {weightAnalytics.totalEntries || 0} entries
+                  </Typography>
+                )}
+                {compositionAnalytics && (
+                  <Typography variant="body2" color="text.secondary">
+                    • Body composition analysis available
+                  </Typography>
+                )}
               </Card>
             </Grid>
             
@@ -386,8 +293,17 @@ const Analytics: React.FC = () => {
                 <Typography variant="h6" color="success.main" gutterBottom>
                   🎯 Goals Status
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   Monitor your progress towards fitness goals
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  • Consistent tracking across all metrics
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  • Comprehensive analytics available
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  • Trend analysis and progress visualization
                 </Typography>
               </Card>
             </Grid>
@@ -399,3 +315,4 @@ const Analytics: React.FC = () => {
 };
 
 export default Analytics;
+
