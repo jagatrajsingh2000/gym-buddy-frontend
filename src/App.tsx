@@ -6,7 +6,7 @@ import { theme } from './theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
-import { Login, Register, Dashboard, Workouts, Progress, Profile, Schedule, Settings, Chat, BodyMetrics, GymDashboard } from './pages';
+import { Login, Register, Dashboard, Workouts, Progress, Profile, Schedule, Settings, Chat, BodyMetrics, GymDashboard, Analytics, Goals } from './pages';
 import TestAuth from './pages/TestAuth';
 import ClientDashboard from './pages/dashboard/ClientDashboard';
 import ClientWorkouts from './pages/workouts/ClientWorkouts';
@@ -84,6 +84,8 @@ const MainLayout: React.FC = () => {
                    <Navigate to="/dashboard" replace />
                  } />
                  <Route path="/body-metrics" element={<BodyMetrics />} />
+                 <Route path="/analytics" element={<Analytics />} />
+                 <Route path="/goals" element={<Goals />} />
                  <Route path="/test-auth" element={<TestAuth />} />
                  <Route path="/settings" element={<Settings />} />
                  <Route path="/" element={<Navigate to="/dashboard" replace />} />

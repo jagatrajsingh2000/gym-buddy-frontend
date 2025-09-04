@@ -15,3 +15,5 @@ export { default as TrainerWorkouts } from './workouts/TrainerWorkouts';
 export { default as TrainerDiet } from './diet/TrainerDiet';
 export { default as GymDashboard } from './dashboard/GymDashboard';
 export { default as BodyMetrics } from './body-metrics/BodyMetrics';
+export { default as Analytics } from './analytics/Analytics';
+export { default as Goals } from './goals/Goals';

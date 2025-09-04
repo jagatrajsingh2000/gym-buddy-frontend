@@ -22,7 +22,8 @@ import {
   Settings,
   Chat as ChatIcon,
   Restaurant,
-  Home
+  Home,
+  Flag
 } from '@mui/icons-material';
 
 interface SidebarProps {
@@ -44,6 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, mobileOpen, onMob
     { path: '/workouts', label: 'Workouts', icon: <FitnessCenter />, category: 'fitness' },
     { path: '/progress', label: 'Progress', icon: <TrendingUp />, category: 'fitness' },
     { path: '/body-metrics', label: 'Body Metrics', icon: <FitnessCenter />, category: 'fitness' },
+    { path: '/analytics', label: 'Analytics', icon: <TrendingUp />, category: 'fitness' },
+    { path: '/goals', label: 'Goals', icon: <Flag />, category: 'fitness' },
     { path: '/profile', label: 'Profile', icon: <Person />, category: 'account' },
     { path: '/schedule', label: 'Schedule', icon: <CalendarToday />, category: 'planning' },
     { path: '/chat', label: 'AI Chat', icon: <ChatIcon />, category: 'support' },

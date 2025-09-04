@@ -17,7 +17,8 @@ import {
   ListItemSecondaryAction,
   Divider,
   Tooltip,
-  Badge
+  Badge,
+  TextField
 } from '@mui/material';
 import {
   Flag,
@@ -34,7 +35,7 @@ import {
   Info
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { bodyMeasurementsService, bodyMetricsUtils, BodyMeasurements } from '../services';
+import { bodyMeasurementsService, bodyMetricsService, bodyMetricsUtils, BodyMeasurements } from '../services';
 
 interface BodyMetricsGoalsProps {
   onRefresh?: () => void;
@@ -47,6 +48,20 @@ const BodyMetricsGoals: React.FC<BodyMetricsGoalsProps> = ({ onRefresh, currentM
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedGoal, setExpandedGoal] = useState<number | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<BodyMeasurements | null>(null);
+  const [formData, setFormData] = useState({
+    chest: '',
+    waist: '',
+    hips: '',
+    biceps: '',
+    forearms: '',
+    thighs: '',
+    calves: '',
+    neck: '',
+    measurementDate: new Date().toISOString().split('T')[0],
+    notes: ''
+  });
 
   // Fetch goals data
   const fetchGoals = async () => {
@@ -74,6 +89,162 @@ const BodyMetricsGoals: React.FC<BodyMetricsGoalsProps> = ({ onRefresh, currentM
   // Toggle goal expansion
   const toggleGoalExpansion = (goalId: number) => {
     setExpandedGoal(expandedGoal === goalId ? null : goalId);
+  };
+
+  // Reset form data
+  const resetForm = () => {
+    setFormData({
+      chest: '',
+      waist: '',
+      hips: '',
+      biceps: '',
+      forearms: '',
+      thighs: '',
+      calves: '',
+      neck: '',
+      measurementDate: new Date().toISOString().split('T')[0],
+      notes: ''
+    });
+  };
+
+  // Handle form input changes
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Start editing a goal
+  const startEditing = (goal: BodyMeasurements) => {
+    setEditingGoal(goal);
+    setFormData({
+      chest: goal.chest?.toString() || '',
+      waist: goal.waist?.toString() || '',
+      hips: goal.hips?.toString() || '',
+      biceps: goal.biceps?.toString() || '',
+      forearms: goal.forearms?.toString() || '',
+      thighs: goal.thighs?.toString() || '',
+      calves: goal.calves?.toString() || '',
+      neck: goal.neck?.toString() || '',
+      measurementDate: goal.measurementDate || new Date().toISOString().split('T')[0],
+      notes: goal.notes || ''
+    });
+    setShowAddForm(true);
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingGoal(null);
+    setShowAddForm(false);
+    resetForm();
+  };
+
+  // Add new goal
+  const handleAddGoal = async () => {
+    if (!token) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const goalData = {
+        measurementDate: formData.measurementDate,
+        chest: formData.chest ? parseFloat(formData.chest) : undefined,
+        waist: formData.waist ? parseFloat(formData.waist) : undefined,
+        hips: formData.hips ? parseFloat(formData.hips) : undefined,
+        biceps: formData.biceps ? parseFloat(formData.biceps) : undefined,
+        forearms: formData.forearms ? parseFloat(formData.forearms) : undefined,
+        thighs: formData.thighs ? parseFloat(formData.thighs) : undefined,
+        calves: formData.calves ? parseFloat(formData.calves) : undefined,
+        neck: formData.neck ? parseFloat(formData.neck) : undefined,
+        notes: formData.notes
+      };
+
+      const response = await bodyMetricsService.createGoal(token, goalData);
+      
+      if (response.success) {
+        setShowAddForm(false);
+        resetForm();
+        fetchGoals();
+        if (onRefresh) onRefresh();
+      } else {
+        setError(response.message || 'Failed to create goal');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error creating goal:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update existing goal
+  const handleUpdateGoal = async () => {
+    if (!token || !editingGoal) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const goalData = {
+        measurementDate: formData.measurementDate,
+        chest: formData.chest ? parseFloat(formData.chest) : undefined,
+        waist: formData.waist ? parseFloat(formData.waist) : undefined,
+        hips: formData.hips ? parseFloat(formData.hips) : undefined,
+        biceps: formData.biceps ? parseFloat(formData.biceps) : undefined,
+        forearms: formData.forearms ? parseFloat(formData.forearms) : undefined,
+        thighs: formData.thighs ? parseFloat(formData.thighs) : undefined,
+        calves: formData.calves ? parseFloat(formData.calves) : undefined,
+        neck: formData.neck ? parseFloat(formData.neck) : undefined,
+        notes: formData.notes
+      };
+
+      const response = await bodyMetricsService.updateGoal(token, editingGoal.id, goalData);
+      
+      if (response.success) {
+        setEditingGoal(null);
+        setShowAddForm(false);
+        resetForm();
+        fetchGoals();
+        if (onRefresh) onRefresh();
+      } else {
+        setError(response.message || 'Failed to update goal');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error updating goal:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete goal
+  const handleDeleteGoal = async (goalId: number) => {
+    if (!token) return;
+
+    if (!window.confirm('Are you sure you want to delete this goal?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await bodyMetricsService.deleteGoal(token, goalId);
+      
+      if (response.success) {
+        fetchGoals();
+        if (onRefresh) onRefresh();
+      } else {
+        setError(response.message || 'Failed to delete goal');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error deleting goal:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Calculate progress for a specific measurement
@@ -118,7 +289,7 @@ const BodyMetricsGoals: React.FC<BodyMetricsGoalsProps> = ({ onRefresh, currentM
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => {/* TODO: Open goal creation dialog */}}
+          onClick={() => setShowAddForm(true)}
           size="small"
         >
           Add New Goal
@@ -154,7 +325,7 @@ const BodyMetricsGoals: React.FC<BodyMetricsGoalsProps> = ({ onRefresh, currentM
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Flag color="primary" />
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Goal #{goal.id}
+                        Fitness Goal
                       </Typography>
                       <Chip
                         label={bodyMetricsUtils.formatGoalDate(goal.measurementDate)}
@@ -171,10 +342,18 @@ const BodyMetricsGoals: React.FC<BodyMetricsGoalsProps> = ({ onRefresh, currentM
                       >
                         {isExpanded ? <ExpandLess /> : <ExpandMore />}
                       </IconButton>
-                      <IconButton size="small" color="primary">
+                      <IconButton 
+                        size="small" 
+                        color="primary"
+                        onClick={() => startEditing(goal)}
+                      >
                         <Edit />
                       </IconButton>
-                      <IconButton size="small" color="error">
+                      <IconButton 
+                        size="small" 
+                        color="error"
+                        onClick={() => handleDeleteGoal(goal.id)}
+                      >
                         <Delete />
                       </IconButton>
                     </Box>
@@ -190,8 +369,8 @@ const BodyMetricsGoals: React.FC<BodyMetricsGoalsProps> = ({ onRefresh, currentM
                   {/* Progress Overview */}
                   <Grid container spacing={2} sx={{ mb: 2 }}>
                     {Object.entries(goal).map(([key, value]) => {
-                      // Skip non-measurement fields
-                      if (['id', 'measurementDate', 'notes'].includes(key)) return null;
+                      // Skip non-measurement fields and timestamp fields
+                      if (['id', 'measurementDate', 'notes', 'created_at', 'updated_at'].includes(key)) return null;
                       
                       // Skip if goal value is null/undefined or not a valid number
                       if (!value || isNaN(parseFloat(String(value)))) return null;
@@ -253,7 +432,7 @@ const BodyMetricsGoals: React.FC<BodyMetricsGoalsProps> = ({ onRefresh, currentM
                     
                     <Grid container spacing={2}>
                       {Object.entries(goal).map(([key, value]) => {
-                        if (['id', 'measurementDate', 'notes'].includes(key)) return null;
+                        if (['id', 'measurementDate', 'notes', 'created_at', 'updated_at'].includes(key)) return null;
                         
                         const currentValue = currentMeasurements?.[key as keyof BodyMeasurements];
                         if (!currentValue || !value) return null;
@@ -307,10 +486,141 @@ const BodyMetricsGoals: React.FC<BodyMetricsGoalsProps> = ({ onRefresh, currentM
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => {/* TODO: Open goal creation dialog */}}
+            onClick={() => setShowAddForm(true)}
           >
             Create Your First Goal
           </Button>
+        </Card>
+      )}
+
+      {/* Add/Edit Goal Form */}
+      {showAddForm && (
+        <Card sx={{ p: 3, mt: 3, bgcolor: 'grey.50' }}>
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            {editingGoal ? 'Edit Goal' : 'Add New Goal'}
+          </Typography>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Chest (cm)"
+                type="number"
+                value={formData.chest}
+                onChange={(e) => handleInputChange('chest', e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Waist (cm)"
+                type="number"
+                value={formData.waist}
+                onChange={(e) => handleInputChange('waist', e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Hips (cm)"
+                type="number"
+                value={formData.hips}
+                onChange={(e) => handleInputChange('hips', e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Biceps (cm)"
+                type="number"
+                value={formData.biceps}
+                onChange={(e) => handleInputChange('biceps', e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Forearms (cm)"
+                type="number"
+                value={formData.forearms}
+                onChange={(e) => handleInputChange('forearms', e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Thighs (cm)"
+                type="number"
+                value={formData.thighs}
+                onChange={(e) => handleInputChange('thighs', e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Calves (cm)"
+                type="number"
+                value={formData.calves}
+                onChange={(e) => handleInputChange('calves', e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Neck (cm)"
+                type="number"
+                value={formData.neck}
+                onChange={(e) => handleInputChange('neck', e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Measurement Date"
+                type="date"
+                value={formData.measurementDate}
+                onChange={(e) => handleInputChange('measurementDate', e.target.value)}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                multiline
+                rows={2}
+                value={formData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                size="small"
+              />
+            </Grid>
+          </Grid>
+          
+          <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+            <Button
+              variant="contained"
+              onClick={editingGoal ? handleUpdateGoal : handleAddGoal}
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : (editingGoal ? 'Update Goal' : 'Add Goal')}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={cancelEditing}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          </Box>
         </Card>
       )}
 

@@ -366,37 +366,26 @@ const WeightHistoryCard: React.FC = () => {
   const currentWeight = getCurrentWeight();
 
   return (
-    <Card sx={{ mb: 3, position: 'relative' }}>
-      <CardHeader
-        title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <AssessmentIcon color="primary" />
-            <Typography variant="h5" component="h2">
-              Weight Tracking
-            </Typography>
-          </Box>
-        }
-        action={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="outlined"
-              startIcon={<AnalyticsIcon />}
-              onClick={fetchAnalytics}
-              disabled={loading}
-            >
-              Analytics
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setShowAddForm(true)}
-              disabled={loading}
-            >
-              Add Weight
-            </Button>
-          </Box>
-        }
-      />
+    <Box sx={{ position: 'relative' }}>
+      {/* Action Buttons */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2, px: 3 }}>
+        <Button
+          variant="outlined"
+          startIcon={<AnalyticsIcon />}
+          onClick={fetchAnalytics}
+          disabled={loading}
+        >
+          Analytics
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setShowAddForm(true)}
+          disabled={loading}
+        >
+          Add Weight
+        </Button>
+      </Box>
 
       <CardContent>
         {/* Status Messages */}
@@ -811,7 +800,7 @@ const WeightHistoryCard: React.FC = () => {
           </Paper>
         )}
       </CardContent>
-    </Card>
+    </Box>
   );
 };
 

@@ -417,6 +417,24 @@ export const bodyMetricsService = {
     });
   },
 
+  // Update existing goal
+  updateGoal: async (token: string, id: number, data: Partial<CreateGoalRequest>): Promise<ApiResponse<BodyMetrics>> => {
+    return apiCall(`/body-metrics/goals`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ id, ...data })
+    });
+  },
+
+  // Delete goal
+  deleteGoal: async (token: string, id: number): Promise<ApiResponse<{ message: string }>> => {
+    return apiCall(`/body-metrics/goals`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ id })
+    });
+  },
+
   // Get weight history
   getWeightHistory: async (token: string, params: WeightHistoryParams = {}): Promise<ApiResponse<PaginatedResponse<WeightHistory>>> => {
     const queryParams = new URLSearchParams();
@@ -695,10 +713,14 @@ export const bodyMeasurementsService = {
 
       // Transform the response to match our interface
       if (response.success && response.data) {
+        // Handle both singular 'goal' and plural 'goals' responses
+        const goalsData = response.data.goals || response.data.goal || [];
+        const goalsArray = Array.isArray(goalsData) ? goalsData : [goalsData];
+        
         return {
           ...response,
           data: {
-            goals: response.data.goals || []
+            goals: goalsArray.filter(goal => goal !== null)
           }
         };
       }
